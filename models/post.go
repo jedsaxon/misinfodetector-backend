@@ -1,14 +1,11 @@
 package models
 
 import (
-	"crypto"
-	"math"
 	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/go-faker/faker/v4"
-	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/google/uuid"
 )
 

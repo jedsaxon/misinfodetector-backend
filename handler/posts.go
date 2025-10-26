@@ -9,8 +9,6 @@ import (
 	"misinfodetector-backend/validation"
 	"net/http"
 	"net/url"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type (
@@ -30,6 +28,11 @@ type (
 	ResponsePutPost struct {
 		Message string              `json:"message"`
 		Post    *models.PostModelId `json:"post"`
+	}
+
+	ResponseRandomPosts struct {
+		Message string `json:"message"`
+		Amount  int    `json:"amount"`
 	}
 
 	ResponseGetPosts struct {
@@ -129,7 +132,20 @@ func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	for _ = range body.Amount {
+		p := models.RandomPost()
+		_, err := c.dbs.InsertPost(p)
+		if err != nil {
+			log.Printf("unable to create post: %v", err)
+			New500Response().RespondToFatal(w)
+			return
+		}
+	}
 
+	WriteJsonFatal(http.StatusOK, w, &ResponseRandomPosts{
+		Message: fmt.Sprintf("successfully created %d random posts", body.Amount),
+		Amount: body.Amount,
+	})
 }
 
 func DeletePosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
