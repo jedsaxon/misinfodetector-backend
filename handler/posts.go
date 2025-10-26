@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"misinfodetector-backend/dbservice"
+	"misinfodetector-backend/handler/util"
 	"misinfodetector-backend/models"
 	"misinfodetector-backend/validation"
 	"net/http"
@@ -75,16 +76,8 @@ func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		New500Response().RespondTo(w)
-		log.Printf("error reading body: %v", err)
-		return
-	}
-
 	var body PutPostForm
-	err = json.Unmarshal(bodyBytes, &body)
-	if err != nil {
+	if err := util.UnmarshalJsonReader(r.Body, &body); err != nil {
 		NewCustomResponse(http.StatusBadRequest, "malformed body").RespondTo(w)
 		log.Printf("unable to unmarshal body: %v", err)
 		return
