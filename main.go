@@ -16,9 +16,12 @@ import (
 )
 
 func main() {
+	// Load Environment Variables
 	cfg := config.NewDefaultConfig()
+	cfg.PopulateFromEnv()
 	cfg.PopulateFromArgs()
 
+	// Connect to Sqlite
 	log.Printf("connecting and initialising sqlite")
 	db, err := sql.Open("sqlite3", cfg.SqliteDsn)
 	if err != nil {
@@ -27,6 +30,7 @@ func main() {
 	defer db.Close()
 	dbs := dbservice.NewDbService(db)
 
+	// Configure Router
 	c := handler.NewPostsController(dbs)
 	r := mux.NewRouter()
 
@@ -37,6 +41,7 @@ func main() {
 
 	handler := cors.AllowAll().Handler(r)
 
+	// Serve 
 	log.Printf("listening on %s", cfg.ListenAddres)
 	err = http.ListenAndServe(cfg.ListenAddres, handler)
 	if err != nil {
