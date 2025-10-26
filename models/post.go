@@ -1,4 +1,4 @@
-package dbservice
+package models
 
 import (
 	"time"
@@ -33,6 +33,7 @@ func NewPost(message string, username string, containsMisinformation bool) *Post
 	}
 }
 
+
 func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
 	return &PostModelId{
 		Id:                     id,
@@ -41,4 +42,8 @@ func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
 		SubmittedDate:          p.SubmittedDate,
 		ContainsMisinformation: p.ContainsMisinformation,
 	}
+}
+
+type Post struct {
+	
 }

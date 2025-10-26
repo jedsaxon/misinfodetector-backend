@@ -7,6 +7,7 @@ import (
 	"log"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler/validation"
+	"misinfodetector-backend/models"
 	"misinfodetector-backend/util"
 	"net/http"
 	"net/url"
@@ -20,12 +21,12 @@ type (
 
 	ResponsePutPost struct {
 		Message string                 `json:"message"`
-		Post    *dbservice.PostModelId `json:"post"`
+		Post    *models.PostModelId `json:"post"`
 	}
 
 	ResponseGetPosts struct {
 		Message   string                  `json:"message"`
-		Posts     []dbservice.PostModelId `json:"posts"`
+		Posts     []models.PostModelId `json:"posts"`
 		PageCount int                     `json:"pages"`
 	}
 )
@@ -58,7 +59,6 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 
 func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 	bodyBytes, err := io.ReadAll(r.Body)
-
 	if err != nil {
 		util.New500Response().RespondTo(w)
 		log.Printf("error reading body: %v", err)
@@ -73,7 +73,7 @@ func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		return
 	}
 
-	post := dbservice.NewPost(body.Message, body.Username, false)
+	post := models.NewPost(body.Message, body.Username, false)
 	postWithId, err := db.InsertPost(post)
 	if err != nil {
 		util.New500Response().RespondTo(w)
