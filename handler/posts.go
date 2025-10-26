@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"misinfodetector-backend/dbservice"
-	"misinfodetector-backend/handler/validation"
+	"misinfodetector-backend/validation"
 	"misinfodetector-backend/models"
 	"net/http"
 	"net/url"
