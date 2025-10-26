@@ -26,7 +26,7 @@ func main() {
 	r.Use(loggingMiddleware)
 
 	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r,dbs) }).Methods(http.MethodGet)
-	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPosts(w, r,dbs) }).Methods(http.MethodPut)
+	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r,dbs) }).Methods(http.MethodPut)
 
 	listen := "0.0.0.0:3000"
 	log.Printf("listening on %s", listen)
@@ -44,7 +44,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func initDb(db *sql.DB) error {
-	_, err := db.Exec("create table if not exists posts(id varchar(36), message text, date_submitted text, is_misinformation int);")
+	_, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, is_misinformation int);")
 	if err != nil {
 		return err
 	}
