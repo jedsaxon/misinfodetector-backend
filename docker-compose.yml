@@ -1,0 +1,6 @@
+services:
+  misinfoai_backend:
+    image: misinfodetector/backend:latest
+    build: .
+    ports: 
+      - "3000:3000"
