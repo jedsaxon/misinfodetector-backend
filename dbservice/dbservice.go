@@ -21,6 +21,17 @@ func NewDbService(db *sql.DB) *DbService {
 	}
 }
 
+// GetPostCount attempts to get the amount of posts in the database. Will
+// return -1, and the error if the operation failed. Otherwise, nil error
+func (dbservice *DbService) GetPostCount() (int64, error) {
+	row := dbservice.db.QueryRow("select count(*) from posts")
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return -1, fmt.Errorf("unable to query post count: %v", err)
+	}
+	return count, nil
+}
+
 func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]models.PostModelId, error) {
 	stmt, err := dbservice.db.Prepare("select * from posts order by date(date_submitted) limit ? offset ?")
 	if err != nil {

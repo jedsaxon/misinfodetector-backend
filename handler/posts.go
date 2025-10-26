@@ -30,7 +30,7 @@ type (
 	ResponseGetPosts struct {
 		Message   string               `json:"message"`
 		Posts     []models.PostModelId `json:"posts"`
-		PageCount int                  `json:"pages"`
+		PageCount int64                `json:"pages"`
 	}
 )
 
@@ -53,16 +53,24 @@ func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := c.dbs.GetPosts(pageNumber+1, resultAmount)
+	postCount, err := c.dbs.GetPostCount()
+	if err != nil {
+		log.Printf("unable to get post count: %v", err)
+		New500Response().RespondToFatal(w)
+		return
+	}
+
+	posts, err := c.dbs.GetPosts(pageNumber, resultAmount)
 	if err != nil {
 		log.Printf("unable to get posts: %v", err)
+		New500Response().RespondToFatal(w)
 		return
 	}
 
 	WriteJsonFatal(http.StatusOK, w, &ResponseGetPosts{
 		Message:   fmt.Sprintf("%d posts found", len(posts)),
 		Posts:     posts,
-		PageCount: len(posts),
+		PageCount: postCount,
 	})
 }
 
