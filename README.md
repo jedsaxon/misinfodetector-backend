@@ -34,6 +34,10 @@ Usage of misinfodetector-backend:
     	where the sqlite database should be stored (default :memory:)
 ```
 
+You can also configure environment variables. Any command line arguments you use will
+override everything in `.env`, so be careful when doing this. The executable will warn
+about this file not existing if you don't use it, but that is completely fine.
+
 ### Docker
 
 If you don't like using the really useful and handy Go cli tools, you may use the 
@@ -50,8 +54,13 @@ cp .env.exmaple .env
 You may run the following command to run the container:
 
 ```
-docker-compose up --build
+docker compose up --build
+# or "docker-compose" on old installs of docker
 ```
+
+**The executable will warn you if `.env` does not exist**, so when you first run the 
+container, please look for that error message and make sure it doesn't occur. If it doesn't,
+you can safely pass the `-d` flag to the command
 
 ## Testing
 
