@@ -20,7 +20,7 @@ func ValidateResultAmount(resultAmount string) (int64, error) {
 		return -1, fmt.Errorf("result amount must be a number")
 	} else if resultAmountNumber <= 0 {
 		return -1, fmt.Errorf("result amount must be greater than 0")
-	} else if resultAmountNumber >= 50 {
+	} else if resultAmountNumber > 50 {
 		return -1, fmt.Errorf("result amount must be less than 50")
 	}
 
