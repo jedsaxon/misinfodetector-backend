@@ -117,6 +117,10 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request) {
+	
+}
+
 func DeletePosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 
 }
