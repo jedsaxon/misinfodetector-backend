@@ -28,7 +28,7 @@ func main() {
 	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r,dbs) }).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r,dbs) }).Methods(http.MethodPut)
 
-	listen := "0.0.0.0:3000"
+	listen := "0.0.0.0:5000"
 	log.Printf("listening on %s", listen)
 	err = http.ListenAndServe(listen, r)
 	if err != nil {
