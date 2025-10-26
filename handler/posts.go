@@ -73,17 +73,21 @@ func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 	}
 
 	post := models.NewPost(body.Message, body.Username, false)
+	if errs := post.ValidatePost(); len(errs) > 0 {
+		New400Response(errs).RespondToFatal(w)
+		return
+	}
 
 	postWithId, err := db.InsertPost(post)
 	if err != nil {
-		New500Response().RespondTo(w)
+		New500Response().RespondToFatal(w)
 		log.Printf("error inserting post: %v", err)
 		return
 	}
 
 	createdUrl, err := url.JoinPath(r.Host, "api", "posts", postWithId.Id.String())
 	if err != nil {
-		New500Response().RespondTo(w)
+		New500Response().RespondToFatal(w)
 		log.Fatalf("unable to generate created URL: %v", err)
 		return
 	}
