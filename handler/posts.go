@@ -6,13 +6,17 @@ import (
 	"io"
 	"log"
 	"misinfodetector-backend/dbservice"
-	"misinfodetector-backend/validation"
 	"misinfodetector-backend/models"
+	"misinfodetector-backend/validation"
 	"net/http"
 	"net/url"
 )
 
 type (
+	PostsController struct {
+		dbs *dbservice.DbService
+	}
+
 	PutPostForm struct {
 		Message  string `json:"message"`
 		Username string `json:"username"`
@@ -30,7 +34,13 @@ type (
 	}
 )
 
-func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
+func NewPostsController(dbs *dbservice.DbService) *PostsController {
+	return &PostsController{
+		dbs: dbs,
+	}
+}
+
+func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	const (
 		pageNumberQueryName   = "pageNumber"
 		resultAmountQueryName = "resultAmount"
@@ -43,7 +53,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		return
 	}
 
-	posts, err := db.GetPosts(pageNumber+1, resultAmount)
+	posts, err := c.dbs.GetPosts(pageNumber+1, resultAmount)
 	if err != nil {
 		log.Printf("unable to get posts: %v", err)
 		return
@@ -56,7 +66,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 	})
 }
 
-func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
+func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		New500Response().RespondTo(w)
@@ -78,7 +88,7 @@ func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		return
 	}
 
-	postWithId, err := db.InsertPost(post)
+	postWithId, err := c.dbs.InsertPost(post)
 	if err != nil {
 		New500Response().RespondToFatal(w)
 		log.Printf("error inserting post: %v", err)
