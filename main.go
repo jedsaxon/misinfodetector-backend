@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	cfg := config.NewEmptyConfig()
+	cfg := config.NewDefaultConfig()
 	cfg.PopulateFromArgs()
 
 	log.Printf("connecting and initialising sqlite")
