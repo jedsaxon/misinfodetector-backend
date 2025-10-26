@@ -10,6 +10,8 @@ import (
 	"misinfodetector-backend/validation"
 	"net/http"
 	"net/url"
+
+	"github.com/gorilla/mux"
 )
 
 type (
@@ -27,6 +29,11 @@ type (
 	}
 
 	ResponsePutPost struct {
+		Message string              `json:"message"`
+		Post    *models.PostModelId `json:"post"`
+	}
+
+	ResponseFindPost struct {
 		Message string              `json:"message"`
 		Post    *models.PostModelId `json:"post"`
 	}
@@ -81,6 +88,35 @@ func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
 		Message:   fmt.Sprintf("%d posts found", len(posts)),
 		Posts:     posts,
 		PageCount: int64(pageCount),
+	})
+}
+
+func (c *PostsController) GetSpecificPost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok {
+		log.Printf("expected 'id' from mux.Vars(), got nothing")
+		New500Response().RespondToFatal(w)
+		return
+	}
+
+	post, err := c.dbs.FindPost(id)
+	if err != nil {
+		log.Printf("unable to find post: %v", err)
+		New500Response().RespondToFatal(w)
+		return
+	}
+
+	if post == nil {
+		errs := make(map[string]string)
+		errs["id"] = "Post with the given ID could not be found"
+		New400Response(errs).RespondToFatal(w)
+		return
+	}
+
+	WriteJsonFatal(http.StatusOK, w, &ResponseFindPost{
+		Message: "found post with the given ID", 
+		Post: post,
 	})
 }
 
@@ -146,7 +182,7 @@ func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request)
 
 	WriteJsonFatal(http.StatusOK, w, &ResponseRandomPosts{
 		Message: fmt.Sprintf("successfully created %d random posts", body.Amount),
-		Amount: body.Amount,
+		Amount:  body.Amount,
 	})
 }
 
