@@ -1,0 +1,16 @@
+package models
+
+import "testing"
+
+func Test_NewPost_EmptyMessageReturnsError(t *testing.T) {
+	input := ""
+
+	post := NewPost(input, "username", true)
+	errs := post.ValidatePost()
+
+	if len(errs) == 0 {
+		t.Error("post.ValidatePost(); expected errors, returned none")
+	} else _, ok := errs["message"]; ok == false {
+		t.Error(`post.ValidatePost(); return errors, had no "message" key`)
+	}
+}
