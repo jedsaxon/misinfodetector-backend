@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"misinfodetector-backend/config"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler"
 	"misinfodetector-backend/handler/middleware"
@@ -15,6 +16,9 @@ import (
 )
 
 func main() {
+	cfg := config.NewEmptyConfig()
+	cfg.PopulateFromArgs()
+
 	log.Printf("connecting and initialising sqlite")
 	db, err := sql.Open("sqlite3", "file:/var/lib/backend/app.db?cache=shared")
 	if err != nil {
