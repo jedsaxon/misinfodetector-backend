@@ -38,7 +38,7 @@ func main() {
 	r.Use(middleware.ContentTypeJsonMiddleware)
 	r.HandleFunc("/api/posts", c.GetPosts).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts", c.PutPost).Methods(http.MethodPost)
-	r.HandleFunc("/api/posts/random", c.PutRandomPost).Methods(http.MethodPost)
+	r.HandleFunc("/api/posts/random", c.PutRandomPosts).Methods(http.MethodPost)
 
 	handler := cors.AllowAll().Handler(r)
 
