@@ -30,7 +30,7 @@ func main() {
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.ContentTypeJsonMiddleware)
 	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r, dbs) }).Methods(http.MethodGet)
-	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r, dbs) }).Methods(http.MethodPut)
+	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r, dbs) }).Methods(http.MethodPost)
 
 	handler := cors.AllowAll().Handler(r)
 
