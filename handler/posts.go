@@ -30,7 +30,6 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		pageNumberQueryName   = "pageNumber"
 		resultAmountQueryName = "resultAmount"
 	)
-	w.Header().Add("Content-Type", "application/json")
 
 	query := r.URL.Query()
 	pageNumber, resultAmount, errs := validation.ValidateGetPostsRequest(query)
@@ -66,7 +65,6 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 
 func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 	bodyBytes, err := io.ReadAll(r.Body)
-	w.Header().Add("Content-Type", "application/json")
 
 	if err != nil {
 		util.New500Response().RespondTo(w)
