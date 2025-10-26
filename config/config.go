@@ -2,6 +2,9 @@ package config
 
 import (
 	"flag"
+	"log"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -33,5 +36,18 @@ func (c *Config) PopulateFromArgs() {
 
 	if *listenAddress != "" {
 		c.ListenAddres = *listenAddress
+	}
+}
+
+func (c *Config) PopulateFromEnv() {
+	myEnv, err := godotenv.Read()
+	log.Fatalf("unable to read environment variables: %v", err)
+
+	if sqliteDsn, ok := myEnv["SQLITE_DSN"]; ok {
+		c.SqliteDsn = sqliteDsn
+	}
+
+	if listenAddress, ok := myEnv["LISTEN_ADDRESS"]; ok {
+		c.ListenAddres = listenAddress
 	}
 }
