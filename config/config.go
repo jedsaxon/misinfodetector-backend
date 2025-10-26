@@ -13,7 +13,7 @@ type Config struct {
 }
 
 const (
-	defaultSqliteDsn     = ":memory"
+	defaultSqliteDsn     = ":memory:"
 	defaultListenAddress = "127.0.0.1:5000"
 )
 
@@ -25,8 +25,8 @@ func NewDefaultConfig() *Config {
 }
 
 func (c *Config) PopulateFromArgs() {
-	var sqliteDsn = flag.String("sqlite", "", "where the sqlite database should be stored")
-	var listenAddress = flag.String("listen", "", "where this program should listen for api requests")
+	var sqliteDsn = flag.String("sqlite", "", "where the sqlite database should be stored (default 127.0.0.1:5000)")
+	var listenAddress = flag.String("listen", "", "where this program should listen for api requests (default :memory:)")
 
 	flag.Parse()
 
@@ -41,7 +41,9 @@ func (c *Config) PopulateFromArgs() {
 
 func (c *Config) PopulateFromEnv() {
 	myEnv, err := godotenv.Read()
-	log.Fatalf("unable to read environment variables: %v", err)
+	if err != nil {
+		log.Fatalf("unable to read environment variables: %v", err)
+	}
 
 	if sqliteDsn, ok := myEnv["SQLITE_DSN"]; ok {
 		c.SqliteDsn = sqliteDsn
