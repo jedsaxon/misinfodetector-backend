@@ -5,6 +5,7 @@ import (
 	"log"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler"
+	"misinfodetector-backend/handler/middleware"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -26,7 +27,8 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.Use(loggingMiddleware)
+	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.ContentTypeJsonMiddleware)
 	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r, dbs) }).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r, dbs) }).Methods(http.MethodPut)
 
@@ -38,13 +40,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error while listening for requests: %v", err)
 	}
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("request recieved - %s", r.RequestURI)
-		next.ServeHTTP(w, r)
-	})
 }
 
 func initDb(db *sql.DB) error {
