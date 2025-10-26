@@ -2,17 +2,19 @@ package main
 
 import (
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler"
 	"net/http"
 
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/rs/cors"
+
 	"github.com/gorilla/mux"
 )
 
 func main() {
-	db, err := sql.Open("sqlite3", "file:app.db?cache=shared&mode=memory")
+	db, err := sql.Open("sqlite3", "file:/var/lib/backend/app.db?cache=shared")
 	if err != nil {
 		log.Fatalf("error opening sqlite database: %v", err)
 	}
@@ -23,24 +25,26 @@ func main() {
 	initDb(db)
 
 	r := mux.NewRouter()
-	r.Use(loggingMiddleware)
 
-	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r,dbs) }).Methods(http.MethodGet)
-	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r,dbs) }).Methods(http.MethodPut)
+	r.Use(loggingMiddleware)
+	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r, dbs) }).Methods(http.MethodGet)
+	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r, dbs) }).Methods(http.MethodPut)
+
+	handler := cors.AllowAll().Handler(r)
 
 	listen := "0.0.0.0:5000"
 	log.Printf("listening on %s", listen)
-	err = http.ListenAndServe(listen, r)
+	err = http.ListenAndServe(listen, handler)
 	if err != nil {
 		log.Fatalf("error while listening for requests: %v", err)
 	}
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Printf("request recieved - %s", r.RequestURI)
-        next.ServeHTTP(w, r)
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("request recieved - %s", r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func initDb(db *sql.DB) error {

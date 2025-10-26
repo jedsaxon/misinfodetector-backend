@@ -10,16 +10,16 @@ type (
 	PostModel struct {
 		Message                string    `json:"message"`
 		Username               string    `json:"username"`
-		SubmittedDate          time.Time `json:"submittedDate"`
-		ContainsMisinformation bool      `json:"containsMisinformation"`
+		SubmittedDate          time.Time `json:"date"`
+		ContainsMisinformation bool      `json:"potentialMisinformation"`
 	}
 
 	PostModelId struct {
 		Id                     uuid.UUID `json:"id"`
 		Message                string    `json:"message"`
 		Username               string    `json:"username"`
-		SubmittedDate          time.Time `json:"submittedDate"`
-		ContainsMisinformation bool      `json:"containsMisinformation"`
+		SubmittedDate          time.Time `json:"date"`
+		ContainsMisinformation bool      `json:"potentialMisinformation"`
 	}
 )
 

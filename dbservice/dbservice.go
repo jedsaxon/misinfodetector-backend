@@ -26,7 +26,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]Po
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(resultAmount, pageNumber*resultAmount)
+	rows, err := stmt.Query(resultAmount, (pageNumber-1)*resultAmount)
 	if err != nil {
 		return nil, fmt.Errorf("unable to execute prepared statement: %v", err)
 	}
