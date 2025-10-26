@@ -37,6 +37,7 @@ func main() {
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.ContentTypeJsonMiddleware)
 	r.HandleFunc("/api/posts", c.GetPosts).Methods(http.MethodGet)
+	r.HandleFunc("/api/posts/{id}", c.GetSpecificPost).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts", c.PutPost).Methods(http.MethodPost)
 	r.HandleFunc("/api/posts/random", c.PutRandomPosts).Methods(http.MethodPost)
 
