@@ -6,17 +6,22 @@ import (
 	"io"
 	"log"
 	"misinfodetector-backend/dbservice"
+	"misinfodetector-backend/handler/validation"
 	"misinfodetector-backend/util"
 	"net/http"
 	"net/url"
-	"strconv"
-	"strings"
 )
 
 type (
 	PutPostForm struct {
 		Message  string `json:"message"`
 		Username string `json:"username"`
+	}
+
+	ResponseGetPosts struct {
+		Message   string                  `json:"message"`
+		Posts     []dbservice.PostModelId `json:"posts"`
+		PageCount int                     `json:"pages"`
 	}
 )
 
@@ -28,54 +33,23 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 	w.Header().Add("Content-Type", "application/json")
 
 	query := r.URL.Query()
-
-	pageNumberQuery := strings.TrimSpace(query.Get(pageNumberQueryName))
-	resultAmountQuery := strings.TrimSpace(query.Get(resultAmountQueryName))
-
-	errors := make(map[string]string)
-	if pageNumberQuery == "" {
-		errors[pageNumberQueryName] = "you must provide a pageNumber"
-	}
-	pageNumber, err := strconv.ParseInt(pageNumberQuery, 10, 64)
-	if err != nil {
-		errors[pageNumberQueryName] = err.Error()
-	} else if pageNumber < 0 {
-		errors[pageNumberQueryName] = "page number cannot be bellow 0"
-	}
-
-	if resultAmountQuery == "" {
-		errors[resultAmountQueryName] = "you must provide a resultAmount"
-	}
-	resultAmount, err := strconv.ParseInt(resultAmountQuery, 10, 64)
-	if err != nil {
-		errors[resultAmountQueryName] = err.Error()
-	} else if resultAmount <= 0 {
-		errors[resultAmountQueryName] = "resultAmount must be greater than 0"
-	} else if resultAmount >= 50 {
-		errors[resultAmountQueryName] = "resultAmount must be less than 50"
-	}
-
-	if len(errors) > 0 {
-		util.New400Response(errors).RespondToFatal(w)
+	pageNumber, resultAmount, errs := validation.ValidateGetPostsRequest(query)
+	if len(errs) > 0 {
+		util.New400Response(errs).RespondToFatal(w)
 		return
 	}
 
-	posts, err := db.GetPosts(pageNumber + 1, resultAmount)
+	posts, err := db.GetPosts(pageNumber+1, resultAmount)
 	if err != nil {
 		log.Printf("unable to get posts: %v", err)
 		return
 	}
 
-	response := struct {
-		Message   string                  `json:"message"`
-		Posts     []dbservice.PostModelId `json:"posts"`
-		PageCount int                     `json:"pages"`
-	}{
+	responseJson, err := json.Marshal(&ResponseGetPosts{
 		Message:   fmt.Sprintf("%d posts found", len(posts)),
 		Posts:     posts,
 		PageCount: len(posts),
-	}
-	responseJson, err := json.Marshal(response)
+	})
 	if err != nil {
 		util.New500Response().RespondToFatal(w)
 		log.Printf("unable to marshal response: %v", err)
