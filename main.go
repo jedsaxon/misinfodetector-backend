@@ -20,7 +20,7 @@ func main() {
 	cfg.PopulateFromArgs()
 
 	log.Printf("connecting and initialising sqlite")
-	db, err := sql.Open("sqlite3", "file:/var/lib/backend/app.db?cache=shared")
+	db, err := sql.Open("sqlite3", cfg.SqliteDsn)
 	if err != nil {
 		log.Fatalf("error opening sqlite database: %v", err)
 	}
@@ -37,9 +37,8 @@ func main() {
 
 	handler := cors.AllowAll().Handler(r)
 
-	listen := "0.0.0.0:5000"
-	log.Printf("listening on %s", listen)
-	err = http.ListenAndServe(listen, handler)
+	log.Printf("listening on %s", cfg.ListenAddres)
+	err = http.ListenAndServe(cfg.ListenAddres, handler)
 	if err != nil {
 		log.Fatalf("error while listening for requests: %v", err)
 	}
