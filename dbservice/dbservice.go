@@ -3,6 +3,7 @@ package dbservice
 import (
 	"database/sql"
 	"fmt"
+	"misinfodetector-backend/models"
 
 	"github.com/google/uuid"
 )
@@ -19,7 +20,7 @@ func NewDbService(db *sql.DB) *DbService {
 	}
 }
 
-func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]PostModelId, error) {
+func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]models.PostModelId, error) {
 	stmt, err := dbservice.db.Prepare("select * from posts order by date(date_submitted) limit ? offset ?")
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
@@ -31,9 +32,9 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]Po
 		return nil, fmt.Errorf("unable to execute prepared statement: %v", err)
 	}
 
-	response := make([]PostModelId, 0)
+	response := make([]models.PostModelId, 0)
 	for rows.Next() {
-		var current PostModelId
+		var current models.PostModelId
 		var idBytes []byte
 		rows.Scan(&idBytes, &current.Message, &current.Username, &current.SubmittedDate, &current.ContainsMisinformation)
 		idUuid, err := uuid.ParseBytes(idBytes)
@@ -47,7 +48,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]Po
 	return response, nil
 }
 
-func (service *DbService) InsertPost(p *PostModel) (*PostModelId, error) {
+func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, error) {
 	// _, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, is_misinformation int);")
 	id, err := uuid.NewRandom()
 	if err != nil {
