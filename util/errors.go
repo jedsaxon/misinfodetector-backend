@@ -8,29 +8,29 @@ import (
 )
 
 type ErrorResponse struct {
-	Message    string            `json:"message"`
-	Errors     map[string]string `json:"errors,omitempty"`
-	HttpStatus int               `json:"-"`
+	HttpStatus int `json:"-"`
+	Message string            `json:"message"`
+	Errors  map[string]string `json:"errors,omitempty"`
 }
 
 func New400Response(errors map[string]string) *ErrorResponse {
 	return &ErrorResponse{
-		Message: "request contains errors",
-		Errors:  errors,
+		Message:    "request contains errors",
+		Errors:     errors,
 		HttpStatus: http.StatusBadRequest,
 	}
 }
 
 func New500Response() *ErrorResponse {
 	return &ErrorResponse{
-		Message: "internal server error",
+		Message:    "internal server error",
 		HttpStatus: http.StatusInternalServerError,
 	}
 }
 
 func NewCustomResponse(status int, message string) *ErrorResponse {
 	return &ErrorResponse{
-		Message: message,
+		Message:    message,
 		HttpStatus: status,
 	}
 }
@@ -56,4 +56,17 @@ func (errors *ErrorResponse) RespondTo(w http.ResponseWriter) error {
 		return fmt.Errorf("error writing to socket: %v", err)
 	}
 	return nil
+}
+
+// WriteJsonFatal attempts to write to the writer, the marshalled payload. 
+// If the marshalling fails, it will fatally error
+func WriteJsonFatal(status int, w http.ResponseWriter, payload any) {
+	responseJson, err := json.Marshal(payload)
+	if err != nil {
+		log.Fatalf("error marshalling response: %v", err)
+	}
+	w.WriteHeader(status)
+	if _, err := w.Write(responseJson); err != nil {
+		log.Fatalf("error writing to socket: %v", err)
+	}
 }

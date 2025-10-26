@@ -18,6 +18,11 @@ type (
 		Username string `json:"username"`
 	}
 
+	ResponsePutPost struct {
+		Message string                 `json:"message"`
+		Post    *dbservice.PostModelId `json:"post"`
+	}
+
 	ResponseGetPosts struct {
 		Message   string                  `json:"message"`
 		Posts     []dbservice.PostModelId `json:"posts"`
@@ -44,23 +49,11 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		return
 	}
 
-	responseJson, err := json.Marshal(&ResponseGetPosts{
+	util.WriteJsonFatal(http.StatusOK, w, &ResponseGetPosts{
 		Message:   fmt.Sprintf("%d posts found", len(posts)),
 		Posts:     posts,
 		PageCount: len(posts),
 	})
-	if err != nil {
-		util.New500Response().RespondToFatal(w)
-		log.Printf("unable to marshal response: %v", err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(responseJson))
-	if err != nil {
-		log.Printf("unable to write response to user: %v", err)
-		return
-	}
 }
 
 func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
@@ -88,31 +81,18 @@ func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		return
 	}
 
-	response := struct {
-		Message string                 `json:"message"`
-		Post    *dbservice.PostModelId `json:"post"`
-	}{
-		Message: "successfully created post",
-		Post:    postWithId,
-	}
-	responseJson, err := json.Marshal(response)
-	if err != nil {
-		util.New500Response().RespondTo(w)
-		log.Printf("error marshalling response: %v", err)
-		return
-	}
 	createdUrl, err := url.JoinPath(r.Host, "api", "posts", postWithId.Id.String())
 	if err != nil {
 		util.New500Response().RespondTo(w)
 		log.Fatalf("unable to generate created URL: %v", err)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Add("location", createdUrl)
 
-	if _, err = w.Write(responseJson); err != nil {
-		log.Printf("error writing to socket: %v", err)
-	}
+	util.WriteJsonFatal(http.StatusOK, w, &ResponsePutPost{
+		Message: "successfully created post",
+		Post:    postWithId,
+	})
 }
 
 func DeletePosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
