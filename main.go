@@ -25,12 +25,13 @@ func main() {
 	log.Printf("initialising sqlite")
 	initDb(db)
 
+	c := handler.NewPostsController(dbs) 
 	r := mux.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.ContentTypeJsonMiddleware)
-	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.GetPosts(w, r, dbs) }).Methods(http.MethodGet)
-	r.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) { handler.PutPost(w, r, dbs) }).Methods(http.MethodPost)
+	r.HandleFunc("/api/posts", c.GetPosts).Methods(http.MethodGet)
+	r.HandleFunc("/api/posts", c.PutPost).Methods(http.MethodPost)
 
 	handler := cors.AllowAll().Handler(r)
 
