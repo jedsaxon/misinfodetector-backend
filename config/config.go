@@ -1,8 +1,10 @@
 package config
 
 import (
+	"errors"
 	"flag"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -42,7 +44,11 @@ func (c *Config) PopulateFromArgs() {
 func (c *Config) PopulateFromEnv() {
 	myEnv, err := godotenv.Read()
 	if err != nil {
-		log.Fatalf("unable to read environment variables: %v", err)
+		if errors.Is(err, os.ErrNotExist) {
+			log.Printf(".env not found, won't load environment variables")
+		} else {
+			log.Fatalf("unable to read environment variables: %v", err)
+		}
 	}
 
 	if sqliteDsn, ok := myEnv["SQLITE_DSN"]; ok {
