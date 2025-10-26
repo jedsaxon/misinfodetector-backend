@@ -15,6 +15,7 @@ type (
 )
 
 func NewDbService(db *sql.DB) *DbService {
+	initDb(db)
 	return &DbService{
 		db: db,
 	}
@@ -65,4 +66,12 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 	}
 
 	return p.WithId(id), nil
+}
+
+func initDb(db *sql.DB) error {
+	_, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, is_misinformation int);")
+	if err != nil {
+		return err
+	}
+	return nil
 }
