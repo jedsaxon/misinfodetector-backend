@@ -64,11 +64,20 @@ you can safely pass the `-d` flag to the command
 
 ## Testing
 
-This project has unit/integration tests configured. You will need to have this project
-working locally for this to work. Run the following command to execute all tests:
+This project has unit/integration tests configured. To execute them, you can either run them
+locally, or through docker. 
+
+### Locally
 
 ```
 go test ./...
+```
+
+### Through Docker
+
+```
+docker compose build .
+docker run --rm -it misinfodetector/backend:latest go test ./...
 ```
 
 See `go help test` for more details for how to run these tests.
