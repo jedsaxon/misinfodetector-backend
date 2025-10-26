@@ -6,6 +6,7 @@ WORKDIR /usr/src/app
 COPY go.mod go.sum ./
 RUN go mod download
 RUN mkdir /usr/local/bin -p
+RUN mkdir /var/lib/backend -p
 
 COPY . .
 RUN go build -v -o /usr/local/bin/ ./... 

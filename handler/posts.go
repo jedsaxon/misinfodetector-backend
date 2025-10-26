@@ -60,18 +60,20 @@ func GetPosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 		return
 	}
 
-	posts, err := db.GetPosts(pageNumber, resultAmount)
+	posts, err := db.GetPosts(pageNumber + 1, resultAmount)
 	if err != nil {
 		log.Printf("unable to get posts: %v", err)
 		return
 	}
 
 	response := struct {
-		Message string                  `json:"message"`
-		Posts   []dbservice.PostModelId `json:"posts"`
+		Message   string                  `json:"message"`
+		Posts     []dbservice.PostModelId `json:"posts"`
+		PageCount int                     `json:"pages"`
 	}{
-		Message: fmt.Sprintf("%d posts found", len(posts)),
-		Posts:   posts,
+		Message:   fmt.Sprintf("%d posts found", len(posts)),
+		Posts:     posts,
+		PageCount: len(posts),
 	}
 	responseJson, err := json.Marshal(response)
 	if err != nil {
@@ -115,8 +117,8 @@ func PutPost(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
 	}
 
 	response := struct {
-		Message string
-		Post    *dbservice.PostModelId
+		Message string                 `json:"message"`
+		Post    *dbservice.PostModelId `json:"post"`
 	}{
 		Message: "successfully created post",
 		Post:    postWithId,
