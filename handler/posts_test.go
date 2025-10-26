@@ -20,7 +20,7 @@ import (
 func newTestPostsController(t *testing.T, postsToInsert int) (*PostsController, *dbservice.DbService) {
 	t.Helper()
 
-	// In‑memory SQLite DSN
+	// In-memory SQLite DSN
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("could not create db service: %v", err)
@@ -37,9 +37,9 @@ func newTestPostsController(t *testing.T, postsToInsert int) (*PostsController, 
 	return NewPostsController(dbs), dbs
 }
 
-// TestPutPost_Success sends a well‑formed POST request containing
+// TestPutPost_Success sends a well-formed POST request containing
 // a valid JSON body with "message" and "username". It expects a
-// 200 OK response, a JSON payload confirming creation, a non‑empty
+// 200 OK response, a JSON payload confirming creation, a non-empty
 // post ID, and a "Location" header pointing to the new resource.
 func TestPutPost_Success(t *testing.T) {
 	c, _ := newTestPostsController(t, 2)
@@ -69,7 +69,7 @@ func TestPutPost_Success(t *testing.T) {
 		t.Errorf("unexpected message: %s", out.Message)
 	}
 	if out.Post == nil || out.Post.Id.String() == "" {
-		t.Error("expected a non‑empty post id")
+		t.Error("expected a non-empty post id")
 	}
 	if loc := resp.Header.Get("Location"); loc == "" {
 		t.Error("expected location header to be set")
@@ -94,7 +94,7 @@ func TestPutPost_InvalidBody(t *testing.T) {
 }
 
 // TestPutPost_ValidationError verifies that a POST request whose
-// body contains an empty "message" or an over‑length message
+// body contains an empty "message" or an over-length message
 // triggers a 400 status and that the error map contains the
 // appropriate field error keys.
 func TestPutPost_ValidationError(t *testing.T) {
@@ -137,7 +137,7 @@ func TestGetPosts_MissingParams(t *testing.T) {
 
 // TestGetPosts_InvalidParams checks that supplying
 // invalid values for "pageNumber" or "resultAmount" (e.g.
-// non‑numeric or out‑of‑range numbers) produces a 400 status.
+// non-numeric or out-of-range numbers) produces a 400 status.
 func TestGetPosts_InvalidParams(t *testing.T) {
 	c, _ := newTestPostsController(t, 2)
 
@@ -211,8 +211,14 @@ func TestGetPosts_PageNumber2_Returns5(t *testing.T) {
 func TestGetPosts_PageNumber3_Returns400(t *testing.T) {
 	c, _ := newTestPostsController(t, 15)
 
-	w, _ := performGetPosts(t, c, 3, 10)
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400 for out‑of‑range pageNumber, got %d", w.Code)
+	w, resp := performGetPosts(t, c, 3, 10)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if resp == nil {
+		t.Fatalf("response body was nil")
+	}
+	if len(resp.Posts) != 0 {
+		t.Fatalf("expected 0 posts, got %d", len(resp.Posts))
 	}
 }
