@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler/util"
@@ -11,6 +9,8 @@ import (
 	"misinfodetector-backend/validation"
 	"net/http"
 	"net/url"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type (
@@ -21,6 +21,10 @@ type (
 	PutPostForm struct {
 		Message  string `json:"message"`
 		Username string `json:"username"`
+	}
+
+	PutRandomPostsForm struct {
+		Amount int `json:"amount"`
 	}
 
 	ResponsePutPost struct {
@@ -111,7 +115,21 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request) {
-	
+	var body PutRandomPostsForm
+	if err := util.UnmarshalJsonReader(r.Body, &body); err != nil {
+		NewCustomResponse(http.StatusBadRequest, "malformed body").RespondTo(w)
+		log.Printf("unable to unmarshal body: %v", err)
+		return
+	}
+
+	if err := validation.ValidateRandomAmount(body.Amount); err != nil {
+		errs := make(map[string]string)
+		errs["amount"] = err.Error()
+		New400Response(errs).RespondToFatal(w)
+		return
+	}
+
+
 }
 
 func DeletePosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {

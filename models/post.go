@@ -1,9 +1,14 @@
 package models
 
 import (
+	"crypto"
+	"math"
+	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +40,6 @@ func NewPost(message string, username string, containsMisinformation bool) *Post
 	}
 }
 
-
 func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
 	return &PostModelId{
 		Id:                     id,
@@ -53,7 +57,7 @@ func (p *PostModel) ValidatePost() map[string]string {
 		errs["message"] = "Message cannot be empty"
 	} else if len(p.Message) >= 256 {
 		errs["message"] = "Message cannot contain more than 256 characters"
-	} 
+	}
 
 	if len(p.Username) == 0 {
 		errs["username"] = "Username cannot be empty"
@@ -64,6 +68,28 @@ func (p *PostModel) ValidatePost() map[string]string {
 	return errs
 }
 
-type Post struct {
-	
+func RandomPost() *PostModel {
+	message := clampString(faker.Sentence(), 256)
+	username := clampString(faker.Username(), 64)
+	submittedDate := time.Now().AddDate(0, 0, -rand.Intn(60))
+	containsMisinformation := rand.Intn(2) == 1
+
+	return &PostModel{
+		Message: message,
+		Username: username,
+		SubmittedDate: submittedDate,
+		ContainsMisinformation: containsMisinformation,
+	}
+}
+
+// clampString clamps the string to a specified length
+func clampString(str string, max int) string {
+	if len(str) > max {
+		b := make([]byte, max)
+		for i := range str {
+			b[i] = str[i]
+		}
+		return string(b)
+	}
+	return str
 }
