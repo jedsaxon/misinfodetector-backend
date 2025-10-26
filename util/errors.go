@@ -8,20 +8,30 @@ import (
 )
 
 type ErrorResponse struct {
-	Message string            `json:"message"`
-	Errors  map[string]string `json:"errors,omitempty"`
+	Message    string            `json:"message"`
+	Errors     map[string]string `json:"errors,omitempty"`
+	HttpStatus int               `json:"-"`
 }
 
 func New400Response(errors map[string]string) *ErrorResponse {
 	return &ErrorResponse{
 		Message: "request contains errors",
 		Errors:  errors,
+		HttpStatus: http.StatusBadRequest,
 	}
 }
 
 func New500Response() *ErrorResponse {
 	return &ErrorResponse{
 		Message: "internal server error",
+		HttpStatus: http.StatusInternalServerError,
+	}
+}
+
+func NewCustomResponse(status int, message string) *ErrorResponse {
+	return &ErrorResponse{
+		Message: message,
+		HttpStatus: status,
 	}
 }
 
@@ -40,7 +50,7 @@ func (errors *ErrorResponse) RespondTo(w http.ResponseWriter) error {
 	if err != nil {
 		return fmt.Errorf("error marshalling response: %v", err)
 	}
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(errors.HttpStatus)
 	_, err = w.Write(responseJson)
 	if err != nil {
 		return fmt.Errorf("error writing to socket: %v", err)
