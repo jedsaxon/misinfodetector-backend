@@ -4,7 +4,7 @@ import "testing"
 
 const (
 	str255char = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	str256char = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	str256char = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	str64char = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	str63char = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 )
@@ -84,7 +84,7 @@ func Test_NewPost_EmptyUsernameReturnsError(t *testing.T) {
 
 		if len(errs) == 0 {
 			t.Error("post.ValidatePost(); expected errors, returned none")
-		} else if _, ok := errs["message"]; ok == false {
+		} else if _, ok := errs["username"]; ok == false {
 			t.Error(`post.ValidatePost(); return errors, had no "username" key`)
 			for k, v := range errs {
 				t.Logf(`found errs["%s"] = "%s"`, k, v)
@@ -121,7 +121,7 @@ func Test_NewPost_UsernameLen63_NoError(t *testing.T) {
 	} 
 }
 
-func Test_NewPost_MessageLen64_Errors(t *testing.T) {
+func Test_NewPost_UsernameLen64_Errors(t *testing.T) {
 	input := str64char
 
 	post := NewPost("message", input, true)
@@ -129,7 +129,7 @@ func Test_NewPost_MessageLen64_Errors(t *testing.T) {
 
 	if len(errs) == 0 {
 		t.Error("post.ValidatePost(); expected errors, got none")
-	} else if _, ok := errs["message"]; ok == false {
+	} else if _, ok := errs["username"]; ok == false {
 		t.Error(`post.ValidatePost(); return errors, had no "username" key`)
 		for k, v := range errs {
 			t.Logf(`found errs["%s"] = "%s"`, k, v)

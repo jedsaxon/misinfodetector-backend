@@ -51,13 +51,13 @@ func (p *PostModel) ValidatePost() map[string]string {
 
 	if len(p.Message) == 0 {
 		errs["message"] = "Message cannot be empty"
-	} else if len(p.Message) > 256 {
+	} else if len(p.Message) >= 256 {
 		errs["message"] = "Message cannot contain more than 256 characters"
 	} 
 
 	if len(p.Username) == 0 {
 		errs["username"] = "Username cannot be empty"
-	} else if len(p.Username) > 64 {
+	} else if len(p.Username) >= 64 {
 		errs["username"] = "Username cannot be more than 64 characters"
 	}
 
