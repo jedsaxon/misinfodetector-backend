@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"log"
+	"math"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler/util"
 	"misinfodetector-backend/models"
@@ -75,10 +76,11 @@ func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pageCount := math.Ceil(float64(postCount) / float64(resultAmount))
 	WriteJsonFatal(http.StatusOK, w, &ResponseGetPosts{
 		Message:   fmt.Sprintf("%d posts found", len(posts)),
 		Posts:     posts,
-		PageCount: postCount,
+		PageCount: int64(pageCount),
 	})
 }
 
