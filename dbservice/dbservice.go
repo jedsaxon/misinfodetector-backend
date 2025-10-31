@@ -117,7 +117,7 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
 	}
 
-	_, err = stmt.Exec(id, p.Message, p.Username, p.SubmittedDate, p.ContainsMisinformation)
+	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDate, p.ContainsMisinformation)
 	if err != nil {
 		return nil, fmt.Errorf("error while executing prepared statement: %v", err)
 	}
