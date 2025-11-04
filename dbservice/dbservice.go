@@ -17,12 +17,22 @@ type (
 	}
 )
 
-func NewDbService(db *sql.DB) *DbService {
-	initDb(db)
-	return &DbService{
-		db: db,
-		dbmut: &sync.Mutex{},
+// NewDbService creates a new sqlite connection. If it was successful, it will return
+// a DbService instance, with a function to close the database connection. 
+func NewDbService(sqliteDsn string) (*DbService, func() error, error) {
+	db, err := sql.Open("sqlite3", sqliteDsn)
+	if err != nil {
+		return nil, nil, err
 	}
+
+	if err := initDb(db); err != nil {
+		return nil, nil, err
+	}
+
+	return &DbService{
+		db:    db,
+		dbmut: &sync.Mutex{},
+	}, db.Close, nil
 }
 
 // GetPostCount attempts to get the amount of posts in the database. Will

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"misinfodetector-backend/config"
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler"
 	"misinfodetector-backend/handler/middleware"
+	"misinfodetector-backend/mqservice"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -23,14 +23,32 @@ func main() {
 
 	// Connect to Sqlite
 	log.Printf("connecting and initialising sqlite")
-	db, err := sql.Open("sqlite3", cfg.SqliteDsn)
+	dbs, sqliteClose, err := dbservice.NewDbService(cfg.SqliteDsn)
 	if err != nil {
 		log.Fatalf("error opening sqlite database: %v", err)
 	}
-	defer db.Close()
-	dbs := dbservice.NewDbService(db)
+	defer func() {
+		err := sqliteClose()
+		if err != nil {
+			log.Panicf("error closing database connection: %v", err)
+		}
+	}()
+
+	// Connect to RabbitMQ
+	log.Printf("connecting and initialising rabbitmq")
+	_, mqClose, err := mqservice.NewMqService(cfg.RabbitMQUri)
+	if err != nil {
+		log.Fatalf("error opening rabbitmq service: %v", err)
+	}
+	defer func() {
+		err := mqClose()
+		if err != nil {
+			log.Panicf("error closing rabbitmq connection: %v", err)
+		}
+	}()
 
 	// Configure Router
+	log.Printf("configuring router")
 	c := handler.NewPostsController(dbs)
 	r := mux.NewRouter()
 
@@ -43,7 +61,7 @@ func main() {
 
 	handler := cors.AllowAll().Handler(r)
 
-	// Serve 
+	// Serve
 	log.Printf("listening on %s", cfg.ListenAddres)
 	err = http.ListenAndServe(cfg.ListenAddres, handler)
 	if err != nil {
