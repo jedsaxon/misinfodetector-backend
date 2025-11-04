@@ -13,18 +13,18 @@ type (
 	MisinfoState int64
 
 	PostModel struct {
-		Message       string       `json:"message"`
-		Username      string       `json:"username"`
-		SubmittedDate time.Time    `json:"date"`
-		MisinfoState  MisinfoState `json:"misinfoState"`
+		Message          string       `json:"message"`
+		Username         string       `json:"username"`
+		SubmittedDateUTC time.Time    `json:"date"`
+		MisinfoState     MisinfoState `json:"misinfo_state"`
 	}
 
 	PostModelId struct {
-		Id            uuid.UUID    `json:"id"`
-		Message       string       `json:"message"`
-		Username      string       `json:"username"`
-		SubmittedDate time.Time    `json:"date"`
-		MisinfoState  MisinfoState `json:"misinfoState"`
+		Id               uuid.UUID    `json:"id"`
+		Message          string       `json:"message"`
+		Username         string       `json:"username"`
+		SubmittedDateUTC time.Time    `json:"date"`
+		MisinfoState     MisinfoState `json:"misinfo_state"`
 	}
 )
 
@@ -36,22 +36,22 @@ const (
 
 // Creates a new post. Will strip spaces in username and message before creating it
 func NewPost(message string, username string, misinfoState MisinfoState) *PostModel {
-	submittedDate := time.Now()
+	submittedDate := time.Now().UTC()
 	return &PostModel{
-		Message:       strings.TrimSpace(message),
-		Username:      strings.TrimSpace(username),
-		MisinfoState:  misinfoState,
-		SubmittedDate: submittedDate,
+		Message:          strings.TrimSpace(message),
+		Username:         strings.TrimSpace(username),
+		MisinfoState:     misinfoState,
+		SubmittedDateUTC: submittedDate,
 	}
 }
 
 func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
 	return &PostModelId{
-		Id:            id,
-		Message:       p.Message,
-		Username:      p.Username,
-		SubmittedDate: p.SubmittedDate,
-		MisinfoState:  p.MisinfoState,
+		Id:               id,
+		Message:          p.Message,
+		Username:         p.Username,
+		SubmittedDateUTC: p.SubmittedDateUTC,
+		MisinfoState:     p.MisinfoState,
 	}
 }
 
@@ -76,14 +76,14 @@ func (p *PostModel) ValidatePost() map[string]string {
 func RandomPost() *PostModel {
 	message := clampString(faker.Sentence(), 256)
 	username := clampString(faker.Username(), 64)
-	submittedDate := time.Now().AddDate(0, 0, -rand.Intn(60))
+	submittedDate := time.Now().UTC().AddDate(0, 0, -rand.Intn(60))
 	containsMisinformation := rand.Intn(2)
 
 	return &PostModel{
-		Message:       message,
-		Username:      username,
-		SubmittedDate: submittedDate,
-		MisinfoState:  MisinfoState(containsMisinformation),
+		Message:          message,
+		Username:         username,
+		SubmittedDateUTC: submittedDate,
+		MisinfoState:     MisinfoState(containsMisinformation),
 	}
 }
 

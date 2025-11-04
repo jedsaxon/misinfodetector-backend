@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"misinfodetector-backend/models"
 	"sync"
 	"time"
@@ -80,7 +81,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 		if err != nil {
 			return nil, err
 		}
-		current.SubmittedDate = time
+		current.SubmittedDateUTC = time
 
 		idUuid, err := uuid.ParseBytes(idBytes)
 		if err != nil {
@@ -106,25 +107,25 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRow(id)
-	if err := row.Err(); err != nil {
+	var current models.PostModelId
+	var submittedDate string
+	var idBytes []byte
+
+	err = stmt.QueryRow(id).Scan(&idBytes, &current.Message, &current.Username, &submittedDate, &current.MisinfoState)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("error querying database for post: %v", err)
 	}
 
-	var current models.PostModelId
-	var idBytes []byte
+	log.Printf("found time: %s", idBytes)
 
-	var submittedDate string
-	row.Scan(&idBytes, &current.Message, &current.Username, &submittedDate, &current.MisinfoState)
-
-	time, err := time.Parse(time.RFC3339, submittedDate)
+	t, err := time.Parse(time.RFC3339, submittedDate)
 	if err != nil {
 		return nil, err
 	}
-	current.SubmittedDate = time
+	current.SubmittedDateUTC = t.UTC()
 
 	idUuid, err := uuid.ParseBytes(idBytes)
 	if err != nil {
@@ -148,7 +149,7 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
 	}
 
-	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDate.Format(time.RFC3339), p.MisinfoState)
+	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDateUTC.Format(time.RFC3339), p.MisinfoState)
 	if err != nil {
 		return nil, fmt.Errorf("error while executing prepared statement: %v", err)
 	}
@@ -181,7 +182,25 @@ func initDb(db *sql.DB) error {
 	return nil
 }
 
+// Inserts a new state if it does not yet exist
 func insertMisinfoState(db *sql.DB, id int64, name string) error {
+	existsStmt, err := db.Prepare("select count(*) from misinfo_state where id=?")
+	if err != nil {
+		return err
+	}
+	defer existsStmt.Close()
+	res := existsStmt.QueryRow(id)
+	if res.Err() != nil {
+		return res.Err()
+	}
+	var count int64
+	res.Scan(&count)
+	if count > 0 {
+		// record exists
+		log.Printf("inserting misinfo state: misinfo state with id %b already exists, skipping", id)
+		return nil
+	}
+
 	stmt, err := db.Prepare("insert into misinfo_state values(?, ?)")
 	if err != nil {
 		return err
