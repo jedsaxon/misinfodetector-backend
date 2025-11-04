@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://raw.githubusercontent.com/jedsaxon/misinfodetector-backend/refs/heads/master/docs/troll-cage.jpg" alt="trolls in a cage thanks to chad golang gopher" />
+    <img src="https://raw.githubusercontent.com/jedsaxon/misinfodetector-backend/refs/heads/master/docs/troll-cage.png" alt="trolls in a cage thanks to chad golang gopher" />
 </p>
 
 # Misinfo Detector Backend
