@@ -36,7 +36,7 @@ func main() {
 
 	// Connect to RabbitMQ
 	log.Printf("connecting and initialising rabbitmq")
-	_, mqClose, err := mqservice.NewMqService(cfg.RabbitMQUri)
+	mqs, mqClose, err := mqservice.NewMqService(cfg.RabbitMQUri)
 	if err != nil {
 		log.Fatalf("error opening rabbitmq service: %v", err)
 	}
@@ -49,7 +49,7 @@ func main() {
 
 	// Configure Router
 	log.Printf("configuring router")
-	c := handler.NewPostsController(dbs)
+	c := handler.NewPostsController(dbs, mqs)
 	r := mux.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)

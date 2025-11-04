@@ -1,6 +1,9 @@
 package mqservice
 
 import (
+	"encoding/json"
+	"misinfodetector-backend/models"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -23,12 +26,12 @@ func NewMqService(rabbitMQUri string) (*MqService, func() error, error) {
 	}
 
 	queue, err := channel.QueueDeclare(
-		"misinfo", 
-		false,   
-		false,   
-		false,   
-		false,   
-		nil,     
+		"misinfo",
+		false,
+		false,
+		false,
+		false,
+		nil,
 	)
 
 	closeMq := func() error {
@@ -42,11 +45,36 @@ func NewMqService(rabbitMQUri string) (*MqService, func() error, error) {
 	}
 
 	mqService := &MqService{
-		conn: connection,
-		ch:   channel,
+		conn:  connection,
+		ch:    channel,
 		queue: &queue,
 	}
 
 	return mqService, closeMq, nil
 }
 
+const (
+	jsonAppType = "application/json"
+	jsonEncType = "utf-8"
+)
+
+// PublishNewPost publishes a post to the message queue
+func (mq *MqService) PublishNewPost(p *models.PostModelId) error {
+	body, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+
+	payload := amqp.Publishing{
+		ContentType:     jsonAppType,
+		ContentEncoding: jsonEncType,
+		Body:            body,
+	}
+
+	err = mq.ch.Publish("", mq.queue.Name, false, false, payload)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

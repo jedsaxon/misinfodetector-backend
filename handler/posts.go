@@ -7,6 +7,7 @@ import (
 	"misinfodetector-backend/dbservice"
 	"misinfodetector-backend/handler/util"
 	"misinfodetector-backend/models"
+	"misinfodetector-backend/mqservice"
 	"misinfodetector-backend/validation"
 	"net/http"
 	"net/url"
@@ -17,6 +18,7 @@ import (
 type (
 	PostsController struct {
 		dbs *dbservice.DbService
+		mqs *mqservice.MqService
 	}
 
 	PutPostForm struct {
@@ -50,9 +52,10 @@ type (
 	}
 )
 
-func NewPostsController(dbs *dbservice.DbService) *PostsController {
+func NewPostsController(dbs *dbservice.DbService, mqs *mqservice.MqService) *PostsController {
 	return &PostsController{
 		dbs: dbs,
+		mqs: mqs,
 	}
 }
 
@@ -135,6 +138,13 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	postWithId, err := c.dbs.InsertPost(post)
+	if err != nil {
+		New500Response().RespondToFatal(w)
+		log.Printf("error inserting post: %v", err)
+		return
+	}
+
+	err = c.mqs.PublishNewPost(postWithId)
 	if err != nil {
 		New500Response().RespondToFatal(w)
 		log.Printf("error inserting post: %v", err)
