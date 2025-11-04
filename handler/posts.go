@@ -131,7 +131,7 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post := models.NewPost(body.Message, body.Username, false)
+	post := models.NewPost(body.Message, body.Username, models.MisinfoStateNotChecked)
 	if errs := post.ValidatePost(); len(errs) > 0 {
 		New400Response(errs).RespondToFatal(w)
 		return

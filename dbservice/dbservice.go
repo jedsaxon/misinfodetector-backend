@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"misinfodetector-backend/models"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -18,7 +19,7 @@ type (
 )
 
 // NewDbService creates a new sqlite connection. If it was successful, it will return
-// a DbService instance, with a function to close the database connection. 
+// a DbService instance, with a function to close the database connection.
 func NewDbService(sqliteDsn string) (*DbService, func() error, error) {
 	db, err := sql.Open("sqlite3", sqliteDsn)
 	if err != nil {
@@ -68,7 +69,19 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 	for rows.Next() {
 		var current models.PostModelId
 		var idBytes []byte
-		rows.Scan(&idBytes, &current.Message, &current.Username, &current.SubmittedDate, &current.ContainsMisinformation)
+
+		var submittedDate string
+		err := rows.Scan(&idBytes, &current.Message, &current.Username, &submittedDate, &current.MisinfoState)
+		if err != nil {
+			return nil, err
+		}
+
+		time, err := time.Parse(time.RFC3339, submittedDate)
+		if err != nil {
+			return nil, err
+		}
+		current.SubmittedDate = time
+
 		idUuid, err := uuid.ParseBytes(idBytes)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create uuid: %v", err)
@@ -103,7 +116,16 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 
 	var current models.PostModelId
 	var idBytes []byte
-	row.Scan(&idBytes, &current.Message, &current.Username, &current.SubmittedDate, &current.ContainsMisinformation)
+
+	var submittedDate string
+	row.Scan(&idBytes, &current.Message, &current.Username, &submittedDate, &current.MisinfoState)
+
+	time, err := time.Parse(time.RFC3339, submittedDate)
+	if err != nil {
+		return nil, err
+	}
+	current.SubmittedDate = time
+
 	idUuid, err := uuid.ParseBytes(idBytes)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create uuid: %v", err)
@@ -117,17 +139,16 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 	service.dbmut.Lock()
 	defer service.dbmut.Unlock()
 
-	// _, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, is_misinformation int);")
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate new id: %v", err)
 	}
-	stmt, err := service.db.Prepare("insert into posts(id, message, username, date_submitted, is_misinformation) values (?, ?, ?, ?, ?)")
+	stmt, err := service.db.Prepare("insert into posts(id, message, username, date_submitted, misinfo_state_id) values (?, ?, ?, ?, ?)")
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
 	}
 
-	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDate, p.ContainsMisinformation)
+	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDate.Format(time.RFC3339), p.MisinfoState)
 	if err != nil {
 		return nil, fmt.Errorf("error while executing prepared statement: %v", err)
 	}
@@ -136,9 +157,37 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 }
 
 func initDb(db *sql.DB) error {
-	_, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, is_misinformation int);")
+	_, err := db.Exec("create table if not exists misinfo_state(id int primary key, name varchar(64) not null);")
+	if err != nil {
+		return err
+	}
+
+	if err = insertMisinfoState(db, int64(models.MisinfoStateFake), "Fake"); err != nil {
+		return err
+	}
+
+	if err = insertMisinfoState(db, int64(models.MisinfoStateTrue), "True"); err != nil {
+		return err
+	}
+
+	if err = insertMisinfoState(db, int64(models.MisinfoStateNotChecked), "Not Checked"); err != nil {
+		return err
+	}
+
+	_, err = db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, misinfo_state_id int references misinfo_state(id));")
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func insertMisinfoState(db *sql.DB, id int64, name string) error {
+	stmt, err := db.Prepare("insert into misinfo_state values(?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id, name)
+	return err
 }
