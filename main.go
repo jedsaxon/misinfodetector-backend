@@ -51,9 +51,14 @@ func main() {
 		}
 	}()
 
+	// Create Posts Controller
+	c := handler.NewPostsController(dbs, mqs)
+
+	// Configure RabbitMQ Queues
+	go mqs.SubscribeToMisinfoOutput(c.HandleNewMisinfoReport)
+
 	// Configure Router
 	log.Printf("configuring router")
-	c := handler.NewPostsController(dbs, mqs)
 	r := mux.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)

@@ -15,14 +15,16 @@ type Config struct {
 	RabbitMqUri             string
 	RabbitMqOutputQueueName string
 	RabbitMqInputQueueName  string
+	RabbitMqConsumerName    string
 }
 
 const (
-	defaultSqliteDsn           = ":memory:"
-	defaultListenAddress       = "127.0.0.1:5000"
-	defaultRabbitMqUri         = "amqp://guest:guest@localhost:5672/"
-	defaultPostOutputQueueName = "misinfo/output"
-	defaultPostInputQueueName  = "misinfo/input"
+	defaultSqliteDsn            = ":memory:"
+	defaultListenAddress        = "127.0.0.1:5000"
+	defaultRabbitMqUri          = "amqp://guest:guest@localhost:5672/"
+	defaultRabbitMqConsumerName = "api"
+	defaultPostOutputQueueName  = "misinfo/output"
+	defaultPostInputQueueName   = "misinfo/input"
 )
 
 func NewDefaultConfig() *Config {
@@ -31,6 +33,7 @@ func NewDefaultConfig() *Config {
 		RabbitMqUri:             defaultRabbitMqUri,
 		RabbitMqInputQueueName:  defaultPostInputQueueName,
 		RabbitMqOutputQueueName: defaultPostOutputQueueName,
+		RabbitMqConsumerName:    defaultRabbitMqConsumerName,
 		ListenAddres:            defaultListenAddress,
 	}
 }
@@ -41,6 +44,7 @@ func (c *Config) PopulateFromArgs() {
 	var inputQueueName = flag.String("inputqueue", "", "rabbitmq input queue name (default misinfo/input)")
 	var outputQueueName = flag.String("outputqueue", "", "rabbitmq input queue name (default misinfo/output)")
 	var listenAddress = flag.String("listen", "", "where this program should listen for api requests (default :memory:)")
+	var consumerName = flag.String("rabbitmq-name", "", "name to give the rabbitmq consumer")
 
 	flag.Parse()
 
@@ -62,6 +66,10 @@ func (c *Config) PopulateFromArgs() {
 
 	if *outputQueueName != "" {
 		c.RabbitMqOutputQueueName = *outputQueueName
+	}
+
+	if *consumerName != "" {
+		c.RabbitMqConsumerName = *consumerName
 	}
 }
 
@@ -87,11 +95,15 @@ func (c *Config) PopulateFromEnv() {
 		c.RabbitMqUri = rabbitMqUri
 	}
 
-	if inputQueuName, ok := myEnv["INPUT_QUEUE_NAME"]; ok {
+	if consumerName, ok := myEnv["RABBITMQ_CONSUMER_NAME"]; ok {
+		c.RabbitMqConsumerName = consumerName
+	}
+
+	if inputQueuName, ok := myEnv["RABBITMQ_INPUT_QUEUE_NAME"]; ok {
 		c.RabbitMqInputQueueName = inputQueuName
 	}
 
-	if outputQueuName, ok := myEnv["OUTPUT_QUEUE_NAME"]; ok {
+	if outputQueuName, ok := myEnv["RABBITMQ_OUTPUT_QUEUE_NAME"]; ok {
 		c.RabbitMqInputQueueName = outputQueuName
 	}
 }
