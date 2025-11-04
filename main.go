@@ -36,7 +36,11 @@ func main() {
 
 	// Connect to RabbitMQ
 	log.Printf("connecting and initialising rabbitmq")
-	mqs, mqClose, err := mqservice.NewMqService(cfg.RabbitMQUri)
+	mqs, mqClose, err := mqservice.NewMqService(&mqservice.MqServiceConfig{
+		Uri:             cfg.RabbitMqUri,
+		InputQueueName:  cfg.RabbitMqInputQueueName,
+		OutputQueueName: cfg.RabbitMqOutputQueueName,
+	})
 	if err != nil {
 		log.Fatalf("error opening rabbitmq service: %v", err)
 	}

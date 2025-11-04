@@ -10,28 +10,36 @@ import (
 )
 
 type Config struct {
-	SqliteDsn    string
-	ListenAddres string
-	RabbitMQUri  string
+	SqliteDsn               string
+	ListenAddres            string
+	RabbitMqUri             string
+	RabbitMqOutputQueueName string
+	RabbitMqInputQueueName  string
 }
 
 const (
-	defaultSqliteDsn     = ":memory:"
-	defaultListenAddress = "127.0.0.1:5000"
-	defaultRabbitMqUri   = "amqp://guest:guest@localhost:5672/"
+	defaultSqliteDsn           = ":memory:"
+	defaultListenAddress       = "127.0.0.1:5000"
+	defaultRabbitMqUri         = "amqp://guest:guest@localhost:5672/"
+	defaultPostOutputQueueName = "misinfo/output"
+	defaultPostInputQueueName  = "misinfo/input"
 )
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		SqliteDsn:    defaultSqliteDsn,
-		RabbitMQUri:  defaultRabbitMqUri,
-		ListenAddres: defaultListenAddress,
+		SqliteDsn:               defaultSqliteDsn,
+		RabbitMqUri:             defaultRabbitMqUri,
+		RabbitMqInputQueueName:  defaultPostInputQueueName,
+		RabbitMqOutputQueueName: defaultPostOutputQueueName,
+		ListenAddres:            defaultListenAddress,
 	}
 }
 
 func (c *Config) PopulateFromArgs() {
 	var sqliteDsn = flag.String("sqlite", "", "where the sqlite database should be stored (default 127.0.0.1:5000)")
 	var rabbitMqUri = flag.String("rabbitmq", "", "rabbitmq connection string (default amqp://guest:guest@localhost:5672/)")
+	var inputQueueName = flag.String("inputqueue", "", "rabbitmq input queue name (default misinfo/input)")
+	var outputQueueName = flag.String("outputqueue", "", "rabbitmq input queue name (default misinfo/output)")
 	var listenAddress = flag.String("listen", "", "where this program should listen for api requests (default :memory:)")
 
 	flag.Parse()
@@ -45,7 +53,15 @@ func (c *Config) PopulateFromArgs() {
 	}
 
 	if *rabbitMqUri != "" {
-		c.RabbitMQUri = *rabbitMqUri
+		c.RabbitMqUri = *rabbitMqUri
+	}
+
+	if *inputQueueName != "" {
+		c.RabbitMqInputQueueName = *inputQueueName
+	}
+
+	if *outputQueueName != "" {
+		c.RabbitMqOutputQueueName = *outputQueueName
 	}
 }
 
@@ -68,6 +84,14 @@ func (c *Config) PopulateFromEnv() {
 	}
 
 	if rabbitMqUri, ok := myEnv["RABBITMQ_URI"]; ok {
-		c.RabbitMQUri = rabbitMqUri
+		c.RabbitMqUri = rabbitMqUri
+	}
+
+	if inputQueuName, ok := myEnv["INPUT_QUEUE_NAME"]; ok {
+		c.RabbitMqInputQueueName = inputQueuName
+	}
+
+	if outputQueuName, ok := myEnv["OUTPUT_QUEUE_NAME"]; ok {
+		c.RabbitMqInputQueueName = outputQueuName
 	}
 }

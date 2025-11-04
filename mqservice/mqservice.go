@@ -7,14 +7,21 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type MqService struct {
-	conn  *amqp.Connection
-	ch    *amqp.Channel
-	queue *amqp.Queue
+type MqServiceConfig struct {
+	Uri             string
+	InputQueueName  string
+	OutputQueueName string
 }
 
-func NewMqService(rabbitMQUri string) (*MqService, func() error, error) {
-	connection, err := amqp.Dial(rabbitMQUri)
+type MqService struct {
+	conn        *amqp.Connection
+	ch          *amqp.Channel
+	inputQueue  *amqp.Queue
+	outputQueue *amqp.Queue
+}
+
+func NewMqService(cfg *MqServiceConfig) (*MqService, func() error, error) {
+	connection, err := amqp.Dial(cfg.Uri)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -25,8 +32,17 @@ func NewMqService(rabbitMQUri string) (*MqService, func() error, error) {
 		return nil, nil, err
 	}
 
-	queue, err := channel.QueueDeclare(
-		"misinfo",
+	inputQueue, err := channel.QueueDeclare(
+		cfg.InputQueueName,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	outputQueue, err := channel.QueueDeclare(
+		cfg.OutputQueueName,
 		false,
 		false,
 		false,
@@ -45,9 +61,10 @@ func NewMqService(rabbitMQUri string) (*MqService, func() error, error) {
 	}
 
 	mqService := &MqService{
-		conn:  connection,
-		ch:    channel,
-		queue: &queue,
+		conn:        connection,
+		ch:          channel,
+		inputQueue:  &inputQueue,
+		outputQueue: &outputQueue,
 	}
 
 	return mqService, closeMq, nil
@@ -71,7 +88,7 @@ func (mq *MqService) PublishNewPost(p *models.PostModelId) error {
 		Body:            body,
 	}
 
-	err = mq.ch.Publish("", mq.queue.Name, false, false, payload)
+	err = mq.ch.Publish("", mq.inputQueue.Name, false, false, payload)
 	if err != nil {
 		return err
 	}
