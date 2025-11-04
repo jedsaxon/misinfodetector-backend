@@ -1,3 +1,7 @@
+<p align="center">
+    [Trolls In A Cage](./docs/troll-cage.jpg)
+</p>
+
 # Misinfo Detector Backend
 
 This is the backend for the misinformation detector service for COS30049. It sits
