@@ -1,5 +1,5 @@
 <p align="center">
-    [Trolls In A Cage](./docs/troll-cage.jpg)
+    ![Trolls In A Cage](./docs/troll-cage.jpg)
 </p>
 
 # Misinfo Detector Backend
