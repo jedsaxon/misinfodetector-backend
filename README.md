@@ -33,9 +33,11 @@ view them.
 ```
 Usage of misinfodetector-backend:
   -listen string
-    	where this program should listen for api requests (default 127.0.0.1:5000)
+    	where this program should listen for api requests (default :memory:)
+  -rabbitmq string
+    	rabbitmq connection string (default amqp://guest:guest@localhost:5672/)
   -sqlite string
-    	where the sqlite database should be stored (default :memory:)
+    	where the sqlite database should be stored (default 127.0.0.1:5000)
 ```
 
 You can also configure environment variables. Any command line arguments you use will
