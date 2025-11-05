@@ -87,3 +87,174 @@ docker run --rm -it misinfodetector/backend:latest go test ./...
 ```
 
 See `go help test` for more details for how to run these tests.
+
+## Misinformation States
+
+| ID | Name        |
+|----|-------------|
+| 0  | Fake        |
+| 1  | True        |
+| 2  | Not Checked |
+
+## Endpoints
+
+### Get Posts
+
+`GET /api/posts`
+
+Retrieves a paginated list of posts from the database. Returns the posts along with the total number of pages available.
+
+**Query Parameters**
+
+- `pageNumber` (integer, required): The page number to retrieve.
+  - Must be greater than 0
+- `resultAmount` (integer, required): The amount of results to return. 
+  - Must be greater than 0
+  - Must be less than 51
+
+**Example Usage**
+
+```sh
+curl -X GET "http://localhost:5000/api/posts?pageNumber=1&resultAmount=10" \
+-H "Content-Type: application/json"
+```
+
+**Response - HTTP 200**
+
+Will return a paged list of products. Along with all posts in the current page, it will also return a `pages` param 
+containing the total amount of pages the user can navigate through. 
+
+`misinfo_state` is the ID of the misinformation state, which can be found in the table [above](#misinformation-states)
+
+```json
+{
+  "message": "10 posts found",
+  "posts": [
+    {
+      "id": "uuid-string",
+      "message": "Post content here",
+      "username": "john_doe",
+      "submitted_date": "2025-11-05T10:30:00Z",
+      "misinfo_state": 0,1,2
+    }
+  ],
+  "pages": 5
+}
+```
+
+**Response - HTTP 404**
+
+If the post could not be found, the server will respond with 404, with the following body
+
+```json
+{
+  "message": "request contains errors",
+  "errors": {
+    "id": "Post with the given ID could not be found"
+  }
+}
+```
+
+### Create Post
+
+`POST /api/posts`
+
+Creates a new post with the provided message and username. Once the post is created and stored in the database, it will
+be published into the RabbitMQ queue, for misinformation detection processing. The misinformation state by default will
+be set to 2, until the misinformation detector service can handle it.
+
+**Request Body**
+
+```json
+{
+  "message": "This is my post content",
+  "username": "john_doe"
+}
+```
+
+ - `username` (string, required): username of the poster. 
+   - length must be above 0
+   - length must be bellow 64
+ - `message` (string, required): content of the post
+   - length must be above 0
+   - length must be bellow 256
+
+**Example Usage**
+
+```sh
+curl -X POST "http://localhost:5000/api/posts" \
+-H "Content-Type: application/json" \
+-d '{ "message": "This is my post content", "username": "john_doe" }'
+```
+
+**Response - HTTP 201**
+
+If the post was successfully created, the server will respond with 201 created. It will set the `Location` header to the
+URL of the created post.
+
+`misinfo_state` is the ID of the misinformation state, which can be found in the table [above](#misinformation-states)
+
+```json
+{
+  "message": "successfully created post",
+  "post": {
+    "id": "uuid-string",
+    "message": "This is my post content",
+    "username": "john_doe",
+    "submitted_date": "2025-11-05T10:30:00Z",
+    "misinfo_state": "NOT_CHECKED"
+  }
+}
+```
+
+### Put Random Posts
+
+`PUT /api/posts/random`
+
+Creates a specified number of randomly generated posts for testing purposes.
+
+**Request Body**
+
+```json
+{
+  "amount": 10
+}
+```
+
+- `amount` (integer, required): number of posts to insert
+  - Must be more than 0
+  - Cannot be greater than 20,000
+
+**Example Usage**
+
+```sh
+curl -X POST "http://localhost:5000/api/posts/random" \
+-H "Content-Type: application/json" \
+-d '{ "amount": 10 }'
+```
+
+## Common Error Responses
+
+### 400 Bad Request
+
+Returned when validation fails or request parameters are invalid. It will return all errors for all fields, in a 
+`Record<string, string>` under the `errors` property.
+
+```json
+{
+  "message": "request contains errors",
+  "errors": {
+    "field_name": "field error message"
+  }
+}
+```
+
+### 500 Internal Server Error
+
+Returned when a server-side error occurs. These errors may be out of your control.
+
+```json
+{
+  "message": "internal server error"
+}
+```

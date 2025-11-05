@@ -61,11 +61,6 @@ func NewPostsController(dbs *dbservice.DbService, mqs *mqservice.MqService) *Pos
 }
 
 func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
-	const (
-		pageNumberQueryName   = "pageNumber"
-		resultAmountQueryName = "resultAmount"
-	)
-
 	query := r.URL.Query()
 	pageNumber, resultAmount, errs := validation.ValidateGetPostsRequest(query)
 	if len(errs) > 0 {
