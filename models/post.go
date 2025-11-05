@@ -35,13 +35,12 @@ const (
 )
 
 // Creates a new post. Will strip spaces in username and message before creating it
-func NewPost(message string, username string, misinfoState MisinfoState) *PostModel {
-	submittedDate := time.Now().UTC()
+func NewPost(message string, username string, submittedDateUtc time.Time, misinfoState MisinfoState) *PostModel {
 	return &PostModel{
 		Message:          strings.TrimSpace(message),
 		Username:         strings.TrimSpace(username),
 		MisinfoState:     misinfoState,
-		SubmittedDateUTC: submittedDate,
+		SubmittedDateUTC: submittedDateUtc,
 	}
 }
 

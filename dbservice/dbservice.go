@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"misinfodetector-backend/models"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/huandu/go-sqlbuilder"
 )
 
 type (
@@ -119,8 +121,6 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 		return nil, fmt.Errorf("error querying database for post: %v", err)
 	}
 
-	log.Printf("found time: %s", idBytes)
-
 	t, err := time.Parse(time.RFC3339, submittedDate)
 	if err != nil {
 		return nil, err
@@ -155,6 +155,46 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 	}
 
 	return p.WithId(id), nil
+}
+
+// UpdatePost will compare old to updated, and update the record in the database with only the changed fields
+// This function will use `old.Id` for the update statement. This function also assumes that there is an actual
+// change, and will perform the update regardless of whether old and updated are fully equal.
+// Returns the amount of records affected, or an error. Will return -1 if an error occurred.
+func (service *DbService) UpdatePost(old *models.PostModelId, updated *models.PostModel) (int64, error) {
+	sql := sqlbuilder.Update("posts")
+
+	if updated.Message != old.Message {
+		sql.Set(sql.Assign("message", updated.Message))
+	}
+	if updated.Username != old.Username {
+	 	sql.Set(sql.Assign("username", updated.Username))
+	}
+	if updated.SubmittedDateUTC.Format(time.RFC3339) != old.SubmittedDateUTC.Format(time.RFC3339) {
+		sql.Set(sql.Assign("date_submitted", updated.SubmittedDateUTC.Format(time.RFC3339)))
+	}
+	if updated.MisinfoState != old.MisinfoState {
+		sql.Set(sql.Assign("misinfo_state_id", strconv.FormatInt(int64(updated.MisinfoState), 10)))
+	}
+
+	sql.Where(sql.Equal("id", old.Id.String()))
+	sqlstmt, args := sql.Build()
+
+	service.dbmut.Lock()
+	defer service.dbmut.Unlock()
+
+	stmt, err := service.db.Prepare(sqlstmt)
+	if err != nil {
+		log.Printf("error: %v", err)
+		return -1, err
+	}
+	defer stmt.Close()
+
+	upd, err := stmt.Exec(args...)
+	if err != nil {
+		return -1, err
+	}
+	return upd.RowsAffected()
 }
 
 func initDb(db *sql.DB) error {

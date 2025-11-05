@@ -11,6 +11,7 @@ import (
 	"misinfodetector-backend/validation"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -131,7 +132,8 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post := models.NewPost(body.Message, body.Username, models.MisinfoStateNotChecked)
+	submittedDate := time.Now().UTC()
+	post := models.NewPost(body.Message, body.Username, submittedDate, models.MisinfoStateNotChecked)
 	if errs := post.ValidatePost(); len(errs) > 0 {
 		New400Response(errs).RespondToFatal(w)
 		return

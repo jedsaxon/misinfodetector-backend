@@ -35,6 +35,21 @@ func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
 		log.Printf("error finding post from misinfo report: %v", err)
 		return
 	}
+	if post == nil {
+		msg.Ack(false)
+		log.Printf("error finding post from misinfo report: post with id [%s] not found", misinfoPayload.PostId.String())
+		return
+	}
+
+	updatedPost := models.NewPost(post.Message, post.Username, post.SubmittedDateUTC, misinfoPayload.Misinformation)
+	upd, err := c.dbs.UpdatePost(post, updatedPost)
+	if err != nil {
+		log.Printf("error updating post from misinfo payload: %v", err)
+		return
+	} else if upd <= 0 {
+		log.Printf("failed to update post: no records updated in database")
+		return
+	}
 
 	log.Printf("post with id %s report returned: %v", post.Id.String(), misinfoPayload.Misinformation)
 
