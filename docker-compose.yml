@@ -6,6 +6,7 @@ services:
       - "5000:5000"
     volumes:
       - "misinfoai_backend:/var/lib/backend/"
+    env_file: .env.backend
 volumes:
   misinfoai_backend:
 

@@ -76,9 +76,7 @@ func (c *Config) PopulateFromArgs() {
 func (c *Config) PopulateFromEnv() {
 	myEnv, err := godotenv.Read()
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			log.Printf(".env not found, won't load environment variables")
-		} else {
+		if !errors.Is(err, os.ErrNotExist) {
 			log.Fatalf("unable to read environment variables: %v", err)
 		}
 	}
