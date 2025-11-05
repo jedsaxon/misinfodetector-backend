@@ -119,8 +119,8 @@ func (c *PostsController) GetSpecificPost(w http.ResponseWriter, r *http.Request
 	}
 
 	WriteJsonFatal(http.StatusOK, w, &ResponseFindPost{
-		Message: "found post with the given ID", 
-		Post: post,
+		Message: "found post with the given ID",
+		Post:    post,
 	})
 }
 
@@ -131,6 +131,7 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 		log.Printf("unable to unmarshal body: %v", err)
 		return
 	}
+	log.Printf("hi")
 
 	submittedDate := time.Now().UTC()
 	post := models.NewPost(body.Message, body.Username, submittedDate, models.MisinfoStateNotChecked)
@@ -146,11 +147,16 @@ func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.mqs.PublishNewPost(postWithId)
-	if err != nil {
-		New500Response().RespondToFatal(w)
-		log.Printf("error inserting post: %v", err)
-		return
+	if c.mqs != nil {
+		log.Printf("publishing new post to rabbitmq connection")
+		err = c.mqs.PublishNewPost(postWithId)
+		if err != nil {
+			New500Response().RespondToFatal(w)
+			log.Printf("error inserting post: %v", err)
+			return
+		}
+	} else {
+		log.Printf("no rabbitmq connection found - will not publish new post")
 	}
 
 	createdUrl, err := url.JoinPath(r.Host, "api", "posts", postWithId.Id.String())

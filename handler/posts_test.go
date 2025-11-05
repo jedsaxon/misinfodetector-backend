@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"misinfodetector-backend/dbservice"
@@ -11,30 +10,35 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// newTestPostsController returns a new PostsController, with an in-memory Sqlite database. It will insert postsToInsert
-// amount of posts into the database
-func newTestPostsController(t *testing.T, postsToInsert int) (*PostsController, *dbservice.DbService) {
+// newTestPostsController returns a new PostsController, with an in-memory Sqlite database, and a method to close the
+// database connection. It will insert postsToInsert amount of posts into the database. Note that mqs will be set to nil.
+func newTestPostsController(t *testing.T, postsToInsert int) (*PostsController, func()) {
 	t.Helper()
 
-	// In-memory SQLite DSN
-	db, err := sql.Open("sqlite3", ":memory:")
+	dbs, cancel, err := dbservice.NewDbService(":memory:")
 	if err != nil {
-		t.Fatalf("could not create db service: %v", err)
+		t.Fatalf("error connecting to dbservice: %v", err)
 	}
-	dbs := dbservice.NewDbService(db)
 
 	for i := 1; i <= postsToInsert; i++ {
-		post := models.NewPost(fmt.Sprintf("msg %d", i), fmt.Sprintf("user%d", i), false)
+		post := models.NewPost(fmt.Sprintf("msg %d", i), fmt.Sprintf("user%d", i), time.Now(), models.MisinfoStateNotChecked)
 		if _, err := dbs.InsertPost(post); err != nil {
 			t.Fatalf("could not insert post %d: %v", i, err)
 		}
 	}
 
-	return NewPostsController(dbs), dbs
+	cancelErr := func() {
+		if err := cancel(); err != nil {
+			t.Fatalf("unable to close sqlite: %v", err)
+		}
+	}
+
+	return NewPostsController(dbs, nil), cancelErr
 }
 
 // TestPutPost_Success sends a well-formed POST request containing
@@ -42,13 +46,17 @@ func newTestPostsController(t *testing.T, postsToInsert int) (*PostsController, 
 // 200 OK response, a JSON payload confirming creation, a non-empty
 // post ID, and a "Location" header pointing to the new resource.
 func TestPutPost_Success(t *testing.T) {
-	c, _ := newTestPostsController(t, 2)
+	c, cancel := newTestPostsController(t, 2)
+	defer cancel()
 
 	body := PutPostForm{
 		Message:  "Integration test",
 		Username: "dev",
 	}
-	b, _ := json.Marshal(body)
+	b, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("error marshalling json: %v", err)
+	}
 
 	req := httptest.NewRequest(http.MethodPost, "/api/posts", bytes.NewReader(b))
 	w := httptest.NewRecorder()
@@ -80,7 +88,8 @@ func TestPutPost_Success(t *testing.T) {
 // malformed JSON body (e.g., an invalid JSON token) yields a
 // 400 Bad Request response.
 func TestPutPost_InvalidBody(t *testing.T) {
-	c, _ := newTestPostsController(t, 2)
+	c, cancel := newTestPostsController(t, 2)
+	defer cancel()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/posts", bytes.NewReader([]byte(`{invalid}`)))
 	w := httptest.NewRecorder()
@@ -98,7 +107,8 @@ func TestPutPost_InvalidBody(t *testing.T) {
 // triggers a 400 status and that the error map contains the
 // appropriate field error keys.
 func TestPutPost_ValidationError(t *testing.T) {
-	c, _ := newTestPostsController(t, 2)
+	c, cancel := newTestPostsController(t, 2)
+	defer cancel()
 
 	body := PutPostForm{
 		Message:  "",
@@ -122,7 +132,8 @@ func TestPutPost_ValidationError(t *testing.T) {
 // results in a 400 Bad Request. The test asserts that the
 // response body contains an error message.
 func TestGetPosts_MissingParams(t *testing.T) {
-	c, _ := newTestPostsController(t, 2)
+	c, cancel := newTestPostsController(t, 2)
+	defer cancel()
 
 	req := httptest.NewRequest(http.MethodGet, "/api/posts", nil) // no query
 	w := httptest.NewRecorder()
@@ -139,7 +150,8 @@ func TestGetPosts_MissingParams(t *testing.T) {
 // invalid values for "pageNumber" or "resultAmount" (e.g.
 // non-numeric or out-of-range numbers) produces a 400 status.
 func TestGetPosts_InvalidParams(t *testing.T) {
-	c, _ := newTestPostsController(t, 2)
+	c, cancel := newTestPostsController(t, 2)
+	defer cancel()
 
 	params := url.Values{}
 	params.Set("pageNumber", "1")
@@ -179,7 +191,8 @@ func performGetPosts(t *testing.T, c *PostsController, page int, amount int) (*h
 }
 
 func TestGetPosts_PageNumber1_Returns10(t *testing.T) {
-	c, _ := newTestPostsController(t, 15)
+	c, cancel := newTestPostsController(t, 15)
+	defer cancel()
 
 	w, resp := performGetPosts(t, c, 1, 10)
 	if w.Code != http.StatusOK {
@@ -194,7 +207,8 @@ func TestGetPosts_PageNumber1_Returns10(t *testing.T) {
 }
 
 func TestGetPosts_PageNumber2_Returns5(t *testing.T) {
-	c, _ := newTestPostsController(t, 15)
+	c, cancel := newTestPostsController(t, 15)
+	defer cancel()
 
 	w, resp := performGetPosts(t, c, 2, 10)
 	if w.Code != http.StatusOK {
@@ -209,7 +223,8 @@ func TestGetPosts_PageNumber2_Returns5(t *testing.T) {
 }
 
 func TestGetPosts_PageNumber3_Returns400(t *testing.T) {
-	c, _ := newTestPostsController(t, 15)
+	c, cancel := newTestPostsController(t, 15)
+	defer cancel()
 
 	w, resp := performGetPosts(t, c, 3, 10)
 	if w.Code != http.StatusOK {
