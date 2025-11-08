@@ -26,7 +26,7 @@ func newTestPostsController(t *testing.T, postsToInsert int) (*PostsController, 
 	}
 
 	for i := 1; i <= postsToInsert; i++ {
-		post := models.NewPost(fmt.Sprintf("msg %d", i), fmt.Sprintf("user%d", i), time.Now(), models.MisinfoStateNotChecked)
+		post := models.NewPost(fmt.Sprintf("msg %d", i), fmt.Sprintf("user%d", i), time.Now())
 		if _, err := dbs.InsertPost(post); err != nil {
 			t.Fatalf("could not insert post %d: %v", i, err)
 		}

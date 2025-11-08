@@ -345,7 +345,7 @@ func (service *DbService) updateMisinfoReport(p *models.PostModelId) error {
 		p.MisinfoReport.State,
 		p.MisinfoReport.Confidence,
 		p.MisinfoReport.SubmittedDateUtc.Format(time.RFC3339),
-		p.Id.String(),
+		p.Id.String,
 	)
 
 	return err

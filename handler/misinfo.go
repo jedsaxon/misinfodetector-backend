@@ -9,11 +9,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type optionalString string
-
 type MisinfoPayload struct {
 	PostId           uuid.UUID           `json:"post_id"`
 	Misinformation   models.MisinfoState `json:"misinfo_state"`
+	Confidence       float32             `json:"confidence"`
 	DateSubmittedUTC string              `json:"date_submitted"`
 }
 
@@ -44,14 +43,10 @@ func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
 		return
 	}
 
-	updatedPost := models.NewPost(post.Message, post.Username, post.SubmittedDateUTC)
-	updatedPost.AttachReportToPost(post.MisinfoReport.State, post.MisinfoReport.Confidence, post.SubmittedDateUTC)
-	upd, err := c.dbs.UpdatePost(post, updatedPost)
-	if err != nil {
+	post.AttachReportToPost(post.MisinfoReport.State, post.MisinfoReport.Confidence, post.SubmittedDateUTC)
+
+	if err = c.dbs.InsertOrUpdateMisinfoReport(post); err != nil {
 		log.Printf("error updating post from misinfo payload: %v", err)
-		return
-	} else if upd <= 0 {
-		log.Printf("failed to update post: no records updated in database")
 		return
 	}
 

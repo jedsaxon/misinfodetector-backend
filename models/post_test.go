@@ -18,7 +18,7 @@ func Test_NewPost_EmptyMessageReturnsError(t *testing.T) {
 	for i := range inputs {
 		input := inputs[i]
 
-		post := NewPost(input, "username", time.Now().UTC(), MisinfoStateNotChecked)
+		post := NewPost(input, "username", time.Now().UTC())
 		errs := post.ValidatePost()
 
 		if len(errs) == 0 {
@@ -35,7 +35,7 @@ func Test_NewPost_EmptyMessageReturnsError(t *testing.T) {
 func Test_NewPost_MessageLen1_NoError(t *testing.T) {
 	input := "a"
 
-	post := NewPost(input, "username", time.Now().UTC(), MisinfoStateNotChecked)
+	post := NewPost(input, "username", time.Now().UTC())
 	errs := post.ValidatePost()
 
 	if len(errs) != 0 {
@@ -49,7 +49,7 @@ func Test_NewPost_MessageLen1_NoError(t *testing.T) {
 func Test_NewPost_MessageLen255_NoError(t *testing.T) {
 	input := str255char
 
-	post := NewPost(input, "username", time.Now().UTC(), MisinfoStateNotChecked)
+	post := NewPost(input, "username", time.Now().UTC())
 	errs := post.ValidatePost()
 
 	if len(errs) != 0 {
@@ -63,7 +63,7 @@ func Test_NewPost_MessageLen255_NoError(t *testing.T) {
 func Test_NewPost_MessageLen256_Errors(t *testing.T) {
 	input := str256char
 
-	post := NewPost(input, "username", time.Now().UTC(), MisinfoStateNotChecked)
+	post := NewPost(input, "username", time.Now().UTC())
 	errs := post.ValidatePost()
 
 	if len(errs) == 0 {
@@ -82,7 +82,7 @@ func Test_NewPost_EmptyUsernameReturnsError(t *testing.T) {
 	for i := range inputs {
 		input := inputs[i]
 
-		post := NewPost("message", input, time.Now().UTC(), MisinfoStateNotChecked)
+		post := NewPost("message", input, time.Now().UTC())
 		errs := post.ValidatePost()
 
 		if len(errs) == 0 {
@@ -99,7 +99,7 @@ func Test_NewPost_EmptyUsernameReturnsError(t *testing.T) {
 func Test_NewPost_UsernameLen1_NoError(t *testing.T) {
 	input := "a"
 
-	post := NewPost("message", input, time.Now().UTC(), MisinfoStateNotChecked)
+	post := NewPost("message", input, time.Now().UTC())
 	errs := post.ValidatePost()
 
 	if len(errs) != 0 {
@@ -113,7 +113,7 @@ func Test_NewPost_UsernameLen1_NoError(t *testing.T) {
 func Test_NewPost_UsernameLen63_NoError(t *testing.T) {
 	input := str63char
 
-	post := NewPost("message", input, time.Now().UTC(), MisinfoStateNotChecked)
+	post := NewPost("message", input, time.Now().UTC())
 	errs := post.ValidatePost()
 
 	if len(errs) != 0 {
@@ -127,7 +127,7 @@ func Test_NewPost_UsernameLen63_NoError(t *testing.T) {
 func Test_NewPost_UsernameLen64_Errors(t *testing.T) {
 	input := str64char
 
-	post := NewPost("message", input, time.Now().UTC(), MisinfoStateNotChecked)
+	post := NewPost("message", input, time.Now().UTC())
 	errs := post.ValidatePost()
 
 	if len(errs) == 0 {

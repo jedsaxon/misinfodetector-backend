@@ -202,7 +202,7 @@ func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	for _ = range body.Amount {
+	for range body.Amount {
 		p := models.RandomPost()
 		_, err := c.dbs.InsertPost(p)
 		if err != nil {
