@@ -60,7 +60,22 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 	dbservice.dbmut.Lock()
 	defer dbservice.dbmut.Unlock()
 
-	stmt, err := dbservice.db.Prepare("select * from posts order by date(date_submitted) limit ? offset ?")
+	stmt, err := dbservice.db.Prepare(`--sql
+		select
+			posts.id                           	        as id,
+			posts.message                      	        as message,
+			posts.username                     	        as username,
+			posts.date_submitted               	        as post_date_submitted,
+			misinfo_report.post_id IS NOT NULL 	        as has_misinfo_report,
+			coalesce(misinfo_report.state, -1)          as misinfo_state,
+			coalesce(misinfo_report.confidence, -1)     as misinfo_confidence,
+			coalesce(misinfo_report.date_submitted, -1) as misinfo_date_submitted
+		from
+			posts
+		LEFT JOIN misinfo_report on posts.id = misinfo_report.post_id
+		ORDER BY DATE(post_date_submitted)
+		limit ? offset ?
+	`)
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
 	}
@@ -74,26 +89,42 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 	response := make([]models.PostModelId, 0)
 	for rows.Next() {
 		var current models.PostModelId
-		current.MisinfoReport = nil
-		var idBytes []byte
 
 		var submittedDate string
-		err := rows.Scan(&idBytes, &current.Message, &current.Username, &submittedDate)
+		var currentPost models.PostModelId
+		var containsMisinfo int
+		var misinfoState models.MisinfoState
+		var misinfoConfidence float32
+		var misinfoDateSubmittedRaw string
+		var idBytes []byte
+
+		err = rows.Scan(&idBytes, &currentPost.Message, &currentPost.Username, &submittedDate, &containsMisinfo, &misinfoState, &misinfoConfidence, &misinfoDateSubmittedRaw)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("error querying database for post: %v", err)
 		}
 
-		time, err := time.Parse(time.RFC3339, submittedDate)
+		postSubmitTime, err := time.Parse(time.RFC3339, submittedDate)
 		if err != nil {
 			return nil, err
 		}
-		current.SubmittedDateUTC = time
+		currentPost.SubmittedDateUTC = postSubmitTime.UTC()
 
 		idUuid, err := uuid.ParseBytes(idBytes)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create uuid: %v", err)
 		}
-		current.Id = idUuid
+		currentPost.Id = idUuid
+
+		if containsMisinfo == 1 {
+			misinfoReportTime, err := time.Parse(time.RFC3339, misinfoDateSubmittedRaw)
+			if err != nil {
+				return nil, err
+			}
+			currentPost.AttachReportToPost(misinfoState, misinfoConfidence, misinfoReportTime.UTC())
+		}
 		response = append(response, current)
 	}
 
@@ -107,17 +138,35 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 	dbs.dbmut.Lock()
 	defer dbs.dbmut.Unlock()
 
-	stmt, err := dbs.db.Prepare("select * from posts where id = ?")
+	stmt, err := dbs.db.Prepare(`--sql
+		select
+			posts.id                           	        as id,
+			posts.message                      	        as message,
+			posts.username                     	        as username,
+			posts.date_submitted               	        as post_date_submitted,
+			misinfo_report.post_id IS NOT NULL 	        as has_misinfo_report,
+			coalesce(misinfo_report.state, -1)          as misinfo_state,
+			coalesce(misinfo_report.confidence, -1)     as misinfo_confidence,
+			coalesce(misinfo_report.date_submitted, -1) as misinfo_date_submitted
+		from
+			posts
+		LEFT JOIN misinfo_report on posts.id = misinfo_report.post_id
+		where id = ?
+	`)
 	if err != nil {
 		return nil, fmt.Errorf("error preparing statement: %v", err)
 	}
 	defer stmt.Close()
 
-	var current models.PostModelId
-	var submittedDate string
+	var currentPost models.PostModelId
+	var currentDate string
+	var containsMisinfo int
+	var misinfoState models.MisinfoState
+	var misinfoConfidence float32
+	var misinfoDateSubmittedRaw string
 	var idBytes []byte
 
-	err = stmt.QueryRow(id).Scan(&idBytes, &current.Message, &current.Username, &submittedDate)
+	err = stmt.QueryRow(id).Scan(&idBytes, &currentPost.Message, &currentPost.Username, &currentDate, &containsMisinfo, &misinfoState, &misinfoConfidence, &misinfoDateSubmittedRaw)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -125,25 +174,34 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 		return nil, fmt.Errorf("error querying database for post: %v", err)
 	}
 
-	t, err := time.Parse(time.RFC3339, submittedDate)
+	postSubmitTime, err := time.Parse(time.RFC3339, currentDate)
 	if err != nil {
 		return nil, err
 	}
-	current.SubmittedDateUTC = t.UTC()
+	currentPost.SubmittedDateUTC = postSubmitTime.UTC()
 
 	idUuid, err := uuid.ParseBytes(idBytes)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create uuid: %v", err)
 	}
-	current.Id = idUuid
+	currentPost.Id = idUuid
 
-	return &current, nil
+	if containsMisinfo == 1 {
+		misinfoReportTime, err := time.Parse(time.RFC3339, misinfoDateSubmittedRaw)
+		if err != nil {
+			return nil, err
+		}
+		currentPost.AttachReportToPost(misinfoState, misinfoConfidence, misinfoReportTime.UTC())
+	}
+
+	return &currentPost, nil
 }
 
 func (service *DbService) ImportPosts(f io.Reader) error {
 	log.Printf("import -> start")
 	var wg sync.WaitGroup
 
+	importTime := time.Now().UTC()
 	i := 0
 	r := csv.NewReader(f)
 	for {
@@ -159,7 +217,7 @@ func (service *DbService) ImportPosts(f io.Reader) error {
 		}
 
 		wg.Go(func() {
-			service.importPostRecord(record, i)
+			service.importPostRecord(record, i, importTime)
 		})
 	}
 
@@ -170,7 +228,7 @@ func (service *DbService) ImportPosts(f io.Reader) error {
 // importPostRecord inserts a single post from the python AI predictions
 // It expects the following records, in order:
 // id,text,label,pred_label,pred_prob,correct
-func (service *DbService) importPostRecord(record []string, i int) {
+func (service *DbService) importPostRecord(record []string, i int, submitDateUtc time.Time) {
 	aiCorrect := record[6]
 	if aiCorrect != "True" {
 		log.Printf("import -> skipping record on line %b: correct != \"True\"", i)
@@ -202,7 +260,7 @@ func (service *DbService) importPostRecord(record []string, i int) {
 	}
 
 	post := models.NewPost(message, randUsername, dateFormatted)
-	post.AttachReportToPost(predictionFormatted, float32(predictionConfidence))
+	post.AttachReportToPost(predictionFormatted, float32(predictionConfidence), submitDateUtc)
 
 	service.InsertPost(post)
 }

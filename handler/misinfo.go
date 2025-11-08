@@ -9,9 +9,12 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type optionalString string
+
 type MisinfoPayload struct {
-	PostId         uuid.UUID           `json:"post_id"`
-	Misinformation models.MisinfoState `json:"misinfo_state"`
+	PostId           uuid.UUID           `json:"post_id"`
+	Misinformation   models.MisinfoState `json:"misinfo_state"`
+	DateSubmittedUTC string              `json:"date_submitted"`
 }
 
 func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
@@ -42,7 +45,7 @@ func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
 	}
 
 	updatedPost := models.NewPost(post.Message, post.Username, post.SubmittedDateUTC)
-	updatedPost.AttachReportToPost(post.MisinfoReport.State, post.MisinfoReport.Confidence)
+	updatedPost.AttachReportToPost(post.MisinfoReport.State, post.MisinfoReport.Confidence, post.SubmittedDateUTC)
 	upd, err := c.dbs.UpdatePost(post, updatedPost)
 	if err != nil {
 		log.Printf("error updating post from misinfo payload: %v", err)

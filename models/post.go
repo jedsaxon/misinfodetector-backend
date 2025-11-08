@@ -22,9 +22,9 @@ type (
 	}
 
 	MisinformationReport struct {
-		State         MisinfoState `json:"state"`
-		Confidence    float32      `json:"confidence"`
-		SubmittedDate time.Time    `json:"submitted_date"`
+		State            MisinfoState `json:"state"`
+		Confidence       float32      `json:"confidence"`
+		SubmittedDateUtc time.Time    `json:"submitted_date"`
 	}
 
 	PostModelId struct {
@@ -53,10 +53,19 @@ func NewPost(message string, username string, submittedDateUtc time.Time) *PostM
 	}
 }
 
-func (p *PostModel) AttachReportToPost(state MisinfoState, confidence float32) {
+func (p *PostModel) AttachReportToPost(state MisinfoState, confidence float32, submittedDateUtc time.Time) {
 	p.MisinfoReport = &MisinformationReport{
-		State:      state,
-		Confidence: confidence,
+		State:            state,
+		Confidence:       confidence,
+		SubmittedDateUtc: submittedDateUtc,
+	}
+}
+
+func (p *PostModelId) AttachReportToPost(state MisinfoState, confidence float32, submittedDateUtc time.Time) {
+	p.MisinfoReport = &MisinformationReport{
+		State:            state,
+		Confidence:       confidence,
+		SubmittedDateUtc: submittedDateUtc,
 	}
 }
 
@@ -64,9 +73,9 @@ func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
 	var duplicateReport *MisinformationReport = nil
 	if p.MisinfoReport != nil {
 		duplicateReport = &MisinformationReport{
-			State:         p.MisinfoReport.State,
-			Confidence:    p.MisinfoReport.Confidence,
-			SubmittedDate: p.MisinfoReport.SubmittedDate,
+			State:            p.MisinfoReport.State,
+			Confidence:       p.MisinfoReport.Confidence,
+			SubmittedDateUtc: p.MisinfoReport.SubmittedDateUtc,
 		}
 	}
 
