@@ -148,7 +148,7 @@ func (c *PostsController) UploadPost(w http.ResponseWriter, r *http.Request) {
 	log.Printf("hi")
 
 	submittedDate := time.Now().UTC()
-	post := models.NewPost(body.Message, body.Username, submittedDate, models.MisinfoStateNotChecked)
+	post := models.NewPost(body.Message, body.Username, submittedDate)
 	if errs := post.ValidatePost(); len(errs) > 0 {
 		New400Response(errs).RespondToFatal(w)
 		return

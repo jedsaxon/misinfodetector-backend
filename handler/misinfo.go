@@ -41,7 +41,8 @@ func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
 		return
 	}
 
-	updatedPost := models.NewPost(post.Message, post.Username, post.SubmittedDateUTC, misinfoPayload.Misinformation)
+	updatedPost := models.NewPost(post.Message, post.Username, post.SubmittedDateUTC)
+	updatedPost.AttachReportToPost(post.MisinfoReport.State, post.MisinfoReport.Confidence)
 	upd, err := c.dbs.UpdatePost(post, updatedPost)
 	if err != nil {
 		log.Printf("error updating post from misinfo payload: %v", err)

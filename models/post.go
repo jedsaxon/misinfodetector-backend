@@ -13,44 +13,63 @@ type (
 	MisinfoState int64
 
 	PostModel struct {
-		Message          string       `json:"message"`
-		Username         string       `json:"username"`
-		SubmittedDateUTC time.Time    `json:"date"`
-		MisinfoState     MisinfoState `json:"misinfo_state"`
+		Message          string    `json:"message"`
+		Username         string    `json:"username"`
+		SubmittedDateUTC time.Time `json:"date"`
+		// MisinfoReport contains details about whether this post is misinformation.
+		// Will be nil if a report has not been made
+		MisinfoReport *MisinformationReport `json:"misinfo_report"`
+	}
+
+	MisinformationReport struct {
+		State      MisinfoState `json:"state"`
+		Confidence float32      `json:"confidence"`
 	}
 
 	PostModelId struct {
-		Id               uuid.UUID    `json:"id"`
-		Message          string       `json:"message"`
-		Username         string       `json:"username"`
-		SubmittedDateUTC time.Time    `json:"date"`
-		MisinfoState     MisinfoState `json:"misinfo_state"`
+		Id               uuid.UUID `json:"id"`
+		Message          string    `json:"message"`
+		Username         string    `json:"username"`
+		SubmittedDateUTC time.Time `json:"date"`
+		// MisinfoReport contains details about whether this post is misinformation.
+		// Will be nil if a report has not been made
+		MisinfoReport *MisinformationReport `json:"misinfo_report"`
 	}
 )
 
 const (
 	MisinfoStateFake MisinfoState = iota
 	MisinfoStateTrue
-	MisinfoStateNotChecked
 )
 
 // Creates a new post. Will strip spaces in username and message before creating it
-func NewPost(message string, username string, submittedDateUtc time.Time, misinfoState MisinfoState) *PostModel {
+func NewPost(message string, username string, submittedDateUtc time.Time) *PostModel {
 	return &PostModel{
 		Message:          strings.TrimSpace(message),
 		Username:         strings.TrimSpace(username),
-		MisinfoState:     misinfoState,
+		MisinfoReport:    nil,
 		SubmittedDateUTC: submittedDateUtc,
 	}
 }
 
+func (p *PostModel) AttachReportToPost(state MisinfoState, confidence float32) {
+	p.MisinfoReport = &MisinformationReport{
+		State:      state,
+		Confidence: confidence,
+	}
+}
+
 func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
+	duplicateReport := &MisinformationReport{
+		State:      p.MisinfoReport.State,
+		Confidence: p.MisinfoReport.Confidence,
+	}
 	return &PostModelId{
 		Id:               id,
 		Message:          p.Message,
 		Username:         p.Username,
 		SubmittedDateUTC: p.SubmittedDateUTC,
-		MisinfoState:     p.MisinfoState,
+		MisinfoReport:    duplicateReport,
 	}
 }
 
@@ -76,13 +95,12 @@ func RandomPost() *PostModel {
 	message := clampString(faker.Sentence(), 256)
 	username := clampString(faker.Username(), 64)
 	submittedDate := time.Now().UTC().AddDate(0, 0, -rand.Intn(60))
-	containsMisinformation := rand.Intn(2)
 
 	return &PostModel{
 		Message:          message,
 		Username:         username,
 		SubmittedDateUTC: submittedDate,
-		MisinfoState:     MisinfoState(containsMisinformation),
+		MisinfoReport:    nil,
 	}
 }
 

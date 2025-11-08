@@ -74,10 +74,11 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 	response := make([]models.PostModelId, 0)
 	for rows.Next() {
 		var current models.PostModelId
+		current.MisinfoReport = &models.MisinformationReport{}
 		var idBytes []byte
 
 		var submittedDate string
-		err := rows.Scan(&idBytes, &current.Message, &current.Username, &submittedDate, &current.MisinfoState)
+		err := rows.Scan(&idBytes, &current.Message, &current.Username, &submittedDate)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +117,7 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 	var submittedDate string
 	var idBytes []byte
 
-	err = stmt.QueryRow(id).Scan(&idBytes, &current.Message, &current.Username, &submittedDate, &current.MisinfoState)
+	err = stmt.QueryRow(id).Scan(&idBytes, &current.Message, &current.Username, &submittedDate)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -181,7 +182,12 @@ func (service *DbService) importPostRecord(record []string, i int) {
 	message := record[1]
 	rawDate := record[2]
 	predictionLabel := record[3]
-	_ = record[4]
+
+	predictionConfidence, err := strconv.ParseFloat(record[4], 32)
+	if err != nil {
+		log.Printf("import -> failed to convert confidence to float32 on line %b: %v", i, err)
+		return
+	}
 
 	predictionFormatted, err := misinfoLabel(predictionLabel)
 	if err != nil {
@@ -195,14 +201,17 @@ func (service *DbService) importPostRecord(record []string, i int) {
 		return
 	}
 
-	post := models.NewPost(message, randUsername, dateFormatted, predictionFormatted)
+	post := models.NewPost(message, randUsername, dateFormatted)
+	post.AttachReportToPost(predictionFormatted, float32(predictionConfidence))
+
 	service.InsertPost(post)
 }
 
 func misinfoLabel(lbl string) (models.MisinfoState, error) {
-	if lbl == "0" {
+	switch lbl {
+	case "0":
 		return models.MisinfoStateFake, nil
-	} else if lbl == "1" {
+	case "1":
 		return models.MisinfoStateTrue, nil
 	}
 	return -1, fmt.Errorf("unknown/unsupported misinformation label: %s", lbl)
@@ -221,7 +230,7 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
 	}
 
-	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDateUTC.Format(time.RFC3339), p.MisinfoState)
+	_, err = stmt.Exec(id.String(), p.Message, p.Username, p.SubmittedDateUTC.Format(time.RFC3339))
 	if err != nil {
 		return nil, fmt.Errorf("error while executing prepared statement: %v", err)
 	}
@@ -245,9 +254,6 @@ func (service *DbService) UpdatePost(old *models.PostModelId, updated *models.Po
 	if updated.SubmittedDateUTC.Format(time.RFC3339) != old.SubmittedDateUTC.Format(time.RFC3339) {
 		sql.Set(sql.Assign("date_submitted", updated.SubmittedDateUTC.Format(time.RFC3339)))
 	}
-	if updated.MisinfoState != old.MisinfoState {
-		sql.Set(sql.Assign("misinfo_state_id", strconv.FormatInt(int64(updated.MisinfoState), 10)))
-	}
 
 	sql.Where(sql.Equal("id", old.Id.String()))
 	sqlstmt, args := sql.Build()
@@ -270,55 +276,14 @@ func (service *DbService) UpdatePost(old *models.PostModelId, updated *models.Po
 }
 
 func initDb(db *sql.DB) error {
-	_, err := db.Exec("create table if not exists misinfo_state(id int primary key, name varchar(64) not null);")
+	_, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text);")
 	if err != nil {
 		return err
 	}
 
-	if err = insertMisinfoState(db, int64(models.MisinfoStateFake), "Fake"); err != nil {
-		return err
-	}
-
-	if err = insertMisinfoState(db, int64(models.MisinfoStateTrue), "True"); err != nil {
-		return err
-	}
-
-	if err = insertMisinfoState(db, int64(models.MisinfoStateNotChecked), "Not Checked"); err != nil {
-		return err
-	}
-
-	_, err = db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text, misinfo_state_id int references misinfo_state(id));")
+	_, err = db.Exec("create table if not exists misinfo_report(post_id varchar(36) references posts(id), state int, confidence float, date_submitted text)")
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// Inserts a new state if it does not yet exist
-func insertMisinfoState(db *sql.DB, id int64, name string) error {
-	existsStmt, err := db.Prepare("select count(*) from misinfo_state where id=?")
-	if err != nil {
-		return err
-	}
-	defer existsStmt.Close()
-	res := existsStmt.QueryRow(id)
-	if res.Err() != nil {
-		return res.Err()
-	}
-	var count int64
-	res.Scan(&count)
-	if count > 0 {
-		// record exists
-		log.Printf("inserting misinfo state: misinfo state with id %b already exists, skipping", id)
-		return nil
-	}
-
-	stmt, err := db.Prepare("insert into misinfo_state values(?, ?)")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(id, name)
-	return err
 }
