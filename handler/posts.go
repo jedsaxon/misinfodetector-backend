@@ -90,6 +90,25 @@ func (c *PostsController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (c *PostsController) PutPosts(w http.ResponseWriter, r *http.Request) {
+	f, _, err := r.FormFile("posts")
+	if err != nil {
+		errs := make(map[string]string, 0)
+		errs["posts"] = "file was not found"
+		New400Response(errs).RespondToFatal(w)
+	}
+	defer f.Close()
+
+	err = c.dbs.ImportPosts(f)
+	if err != nil {
+		log.Printf("unable to insert posts: %v", err)
+		New500Response().RespondToFatal(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (c *PostsController) GetSpecificPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["id"]
@@ -119,7 +138,7 @@ func (c *PostsController) GetSpecificPost(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (c *PostsController) PutPost(w http.ResponseWriter, r *http.Request) {
+func (c *PostsController) UploadPost(w http.ResponseWriter, r *http.Request) {
 	var body PutPostForm
 	if err := util.UnmarshalJsonReader(r.Body, &body); err != nil {
 		NewCustomResponse(http.StatusBadRequest, "malformed body").RespondTo(w)

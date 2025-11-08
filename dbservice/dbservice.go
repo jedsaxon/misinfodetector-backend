@@ -2,14 +2,17 @@ package dbservice
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"misinfodetector-backend/models"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/go-faker/faker/v4"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 )
@@ -136,6 +139,75 @@ func (dbs *DbService) FindPost(id string) (*models.PostModelId, error) {
 	return &current, nil
 }
 
+func (service *DbService) ImportPosts(f io.Reader) error {
+	log.Printf("import -> start")
+	var wg sync.WaitGroup
+
+	i := 0
+	r := csv.NewReader(f)
+	for {
+		defer func() { i++ }()
+
+		record, err := r.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				return err
+			}
+		}
+
+		wg.Go(func() {
+			service.importPostRecord(record, i)
+		})
+	}
+
+	wg.Wait()
+	return nil
+}
+
+// importPostRecord inserts a single post from the python AI predictions
+// It expects the following records, in order:
+// id,text,label,pred_label,pred_prob,correct
+func (service *DbService) importPostRecord(record []string, i int) {
+	aiCorrect := record[6]
+	if aiCorrect != "True" {
+		log.Printf("import -> skipping record on line %b: correct != \"True\"", i)
+		return
+	}
+
+	randUsername := faker.Name()
+
+	message := record[1]
+	rawDate := record[2]
+	predictionLabel := record[3]
+	_ = record[4]
+
+	predictionFormatted, err := misinfoLabel(predictionLabel)
+	if err != nil {
+		log.Printf("import -> skipping record on line %b: %v", i, err)
+		return
+	}
+
+	dateFormatted, err := time.Parse("2006-01-06", rawDate)
+	if err != nil {
+		log.Printf("import -> skipping record on line %b: bad date: %v", i, err)
+		return
+	}
+
+	post := models.NewPost(message, randUsername, dateFormatted, predictionFormatted)
+	service.InsertPost(post)
+}
+
+func misinfoLabel(lbl string) (models.MisinfoState, error) {
+	if lbl == "0" {
+		return models.MisinfoStateFake, nil
+	} else if lbl == "1" {
+		return models.MisinfoStateTrue, nil
+	}
+	return -1, fmt.Errorf("unknown/unsupported misinformation label: %s", lbl)
+}
+
 func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, error) {
 	service.dbmut.Lock()
 	defer service.dbmut.Unlock()
@@ -168,7 +240,7 @@ func (service *DbService) UpdatePost(old *models.PostModelId, updated *models.Po
 		sql.Set(sql.Assign("message", updated.Message))
 	}
 	if updated.Username != old.Username {
-	 	sql.Set(sql.Assign("username", updated.Username))
+		sql.Set(sql.Assign("username", updated.Username))
 	}
 	if updated.SubmittedDateUTC.Format(time.RFC3339) != old.SubmittedDateUTC.Format(time.RFC3339) {
 		sql.Set(sql.Assign("date_submitted", updated.SubmittedDateUTC.Format(time.RFC3339)))

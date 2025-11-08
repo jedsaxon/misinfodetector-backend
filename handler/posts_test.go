@@ -61,7 +61,7 @@ func TestPutPost_Success(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/posts", bytes.NewReader(b))
 	w := httptest.NewRecorder()
 
-	c.PutPost(w, req)
+	c.UploadPost(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusOK {
@@ -94,7 +94,7 @@ func TestPutPost_InvalidBody(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/posts", bytes.NewReader([]byte(`{invalid}`)))
 	w := httptest.NewRecorder()
 
-	c.PutPost(w, req)
+	c.UploadPost(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusBadRequest {
@@ -119,7 +119,7 @@ func TestPutPost_ValidationError(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/posts", bytes.NewReader(b))
 	w := httptest.NewRecorder()
 
-	c.PutPost(w, req)
+	c.UploadPost(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusBadRequest {
