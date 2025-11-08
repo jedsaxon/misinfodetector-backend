@@ -22,8 +22,9 @@ type (
 	}
 
 	MisinformationReport struct {
-		State      MisinfoState `json:"state"`
-		Confidence float32      `json:"confidence"`
+		State         MisinfoState `json:"state"`
+		Confidence    float32      `json:"confidence"`
+		SubmittedDate time.Time    `json:"submitted_date"`
 	}
 
 	PostModelId struct {
@@ -63,8 +64,9 @@ func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
 	var duplicateReport *MisinformationReport = nil
 	if p.MisinfoReport != nil {
 		duplicateReport = &MisinformationReport{
-			State:      p.MisinfoReport.State,
-			Confidence: p.MisinfoReport.Confidence,
+			State:         p.MisinfoReport.State,
+			Confidence:    p.MisinfoReport.Confidence,
+			SubmittedDate: p.MisinfoReport.SubmittedDate,
 		}
 	}
 
