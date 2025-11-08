@@ -56,7 +56,7 @@ func (dbservice *DbService) GetPostCount() (int64, error) {
 	return count, nil
 }
 
-func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]models.PostModelId, error) {
+func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]*models.PostModelId, error) {
 	dbservice.dbmut.Lock()
 	defer dbservice.dbmut.Unlock()
 
@@ -69,7 +69,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 			misinfo_report.post_id IS NOT NULL 	        as has_misinfo_report,
 			coalesce(misinfo_report.state, -1)          as misinfo_state,
 			coalesce(misinfo_report.confidence, -1)     as misinfo_confidence,
-			coalesce(misinfo_report.date_submitted, -1) as misinfo_date_submitted
+			coalesce(misinfo_report.date_submitted, '') as misinfo_date_submitted
 		from
 			posts
 		LEFT JOIN misinfo_report on posts.id = misinfo_report.post_id
@@ -85,11 +85,10 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 	if err != nil {
 		return nil, fmt.Errorf("unable to execute prepared statement: %v", err)
 	}
+	defer rows.Close()
 
-	response := make([]models.PostModelId, 0)
+	response := make([]*models.PostModelId, 0)
 	for rows.Next() {
-		var current models.PostModelId
-
 		var submittedDate string
 		var currentPost models.PostModelId
 		var containsMisinfo int
@@ -125,7 +124,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 			}
 			currentPost.AttachReportToPost(misinfoState, misinfoConfidence, misinfoReportTime.UTC())
 		}
-		response = append(response, current)
+		response = append(response, &currentPost)
 	}
 
 	return response, nil

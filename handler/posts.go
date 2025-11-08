@@ -47,9 +47,9 @@ type (
 	}
 
 	ResponseGetPosts struct {
-		Message   string               `json:"message"`
-		Posts     []models.PostModelId `json:"posts"`
-		PageCount int64                `json:"pages"`
+		Message   string                `json:"message"`
+		Posts     []*models.PostModelId `json:"posts"`
+		PageCount int64                 `json:"pages"`
 	}
 )
 
