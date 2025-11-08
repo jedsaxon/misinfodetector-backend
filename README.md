@@ -57,6 +57,10 @@ things you can change in case you have problems.
 cp .env.exmaple .env
 ```
 
+The example contains commented-out environment variables, which you may override by
+uncommenting them as needed. If they are left commented or discluded entirely from 
+this file, then the defaults will be loaded.
+
 You may run the following command to run the container:
 
 ```
