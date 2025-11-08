@@ -74,7 +74,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]mo
 	response := make([]models.PostModelId, 0)
 	for rows.Next() {
 		var current models.PostModelId
-		current.MisinfoReport = &models.MisinformationReport{}
+		current.MisinfoReport = nil
 		var idBytes []byte
 
 		var submittedDate string
@@ -225,7 +225,7 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate new id: %v", err)
 	}
-	stmt, err := service.db.Prepare("insert into posts(id, message, username, date_submitted, misinfo_state_id) values (?, ?, ?, ?, ?)")
+	stmt, err := service.db.Prepare("insert into posts(id, message, username, date_submitted) values (?, ?, ?, ?)")
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
 	}

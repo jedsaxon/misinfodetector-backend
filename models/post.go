@@ -18,7 +18,7 @@ type (
 		SubmittedDateUTC time.Time `json:"date"`
 		// MisinfoReport contains details about whether this post is misinformation.
 		// Will be nil if a report has not been made
-		MisinfoReport *MisinformationReport `json:"misinfo_report"`
+		MisinfoReport *MisinformationReport `json:"misinfo_report,omitempty"`
 	}
 
 	MisinformationReport struct {
@@ -60,10 +60,14 @@ func (p *PostModel) AttachReportToPost(state MisinfoState, confidence float32) {
 }
 
 func (p *PostModel) WithId(id uuid.UUID) *PostModelId {
-	duplicateReport := &MisinformationReport{
-		State:      p.MisinfoReport.State,
-		Confidence: p.MisinfoReport.Confidence,
+	var duplicateReport *MisinformationReport = nil
+	if p.MisinfoReport != nil {
+		duplicateReport = &MisinformationReport{
+			State:      p.MisinfoReport.State,
+			Confidence: p.MisinfoReport.Confidence,
+		}
 	}
+
 	return &PostModelId{
 		Id:               id,
 		Message:          p.Message,
