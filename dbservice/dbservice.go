@@ -204,10 +204,9 @@ func (service *DbService) ImportPosts(f io.Reader) error {
 	i := 0
 	r := csv.NewReader(f)
 	for {
-		defer func() { i++ }()
-
 		record, err := r.Read()
 		if err != nil {
+			i++
 			if err == io.EOF {
 				break
 			} else {
@@ -218,19 +217,21 @@ func (service *DbService) ImportPosts(f io.Reader) error {
 		wg.Go(func() {
 			service.importPostRecord(record, i, importTime)
 		})
+		i++
 	}
 
 	wg.Wait()
+	log.Printf("import -> done")
 	return nil
 }
 
 // importPostRecord inserts a single post from the python AI predictions
 // It expects the following records, in order:
 // id,text,label,pred_label,pred_prob,correct
-func (service *DbService) importPostRecord(record []string, i int, submitDateUtc time.Time) {
+func (service *DbService) importPostRecord(record []string, idx int, submitDateUtc time.Time) {
 	aiCorrect := record[6]
 	if aiCorrect != "True" {
-		log.Printf("import -> skipping record on line %b: correct != \"True\"", i)
+		log.Printf("import -> skipping record on line %v: correct != \"True\"", idx)
 		return
 	}
 
@@ -238,23 +239,24 @@ func (service *DbService) importPostRecord(record []string, i int, submitDateUtc
 
 	message := record[1]
 	rawDate := record[2]
-	predictionLabel := record[3]
+	predictionLabel := record[4]
+	predictionConfidenceRaw := record[5]
 
-	predictionConfidence, err := strconv.ParseFloat(record[4], 32)
+	predictionConfidence, err := strconv.ParseFloat(predictionConfidenceRaw, 32)
 	if err != nil {
-		log.Printf("import -> failed to convert confidence to float32 on line %b: %v", i, err)
+		log.Printf("import -> failed to convert confidence to float32 on line %b: %v", idx, err)
 		return
 	}
 
 	predictionFormatted, err := misinfoLabel(predictionLabel)
 	if err != nil {
-		log.Printf("import -> skipping record on line %b: %v", i, err)
+		log.Printf("import -> skipping record on line %b: %v", idx, err)
 		return
 	}
 
 	dateFormatted, err := time.Parse("2006-01-06", rawDate)
 	if err != nil {
-		log.Printf("import -> skipping record on line %b: bad date: %v", i, err)
+		log.Printf("import -> skipping record on line %b: bad date: %v", idx, err)
 		return
 	}
 
@@ -282,6 +284,8 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate new id: %v", err)
 	}
+
+	// Insert Post
 	stmt, err := service.db.Prepare("insert into posts(id, message, username, date_submitted) values (?, ?, ?, ?)")
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare statement: %v", err)
@@ -292,6 +296,20 @@ func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, 
 		return nil, fmt.Errorf("error while executing prepared statement: %v", err)
 	}
 
+	// Insert Misinfo Report
+	if p.MisinfoReport != nil {
+		stmt, err := service.db.Prepare("insert into misinfo_report(post_id, state, confidence, date_submitted) values (?, ?, ?, ?)")
+		if err != nil {
+			return nil, fmt.Errorf("unable to prepare statement: %v", err)
+		}
+
+		_, err = stmt.Exec(id.String(), p.MisinfoReport.State, p.MisinfoReport.Confidence, p.MisinfoReport.SubmittedDateUtc.Format(time.RFC3339))
+		if err != nil {
+			return nil, fmt.Errorf("error while executing prepared statement: %v", err)
+		}
+	}
+
+	// Done
 	return p.WithId(id), nil
 }
 
@@ -312,7 +330,7 @@ func (service *DbService) MisinfoReportExistsFor(p *models.PostModelId) (bool, e
 	service.dbmut.Lock()
 	defer service.dbmut.Unlock()
 
-	stmt, err := service.db.Prepare("select count(*) from misinfo_report where id = ?")
+	stmt, err := service.db.Prepare("select count(*) from misinfo_report where post_id = ?")
 	if err != nil {
 		return false, fmt.Errorf("error preparing sql statement: %v", err)
 	}

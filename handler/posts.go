@@ -96,6 +96,7 @@ func (c *PostsController) PutPosts(w http.ResponseWriter, r *http.Request) {
 		errs := make(map[string]string, 0)
 		errs["posts"] = "file was not found"
 		New400Response(errs).RespondToFatal(w)
+		return
 	}
 	defer f.Close()
 

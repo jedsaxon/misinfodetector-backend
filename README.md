@@ -221,6 +221,40 @@ URL of the created post.
 }
 ```
 
+### Import Posts
+
+`PUT /api/posts`
+
+Imports posts from a CSV file, into the database. It expects the following columns in a csv formatted file (can have different
+column names, but must be in correct order):
+
+`id` - Id of the post (not used, but required)
+`text` - The post's actual content
+`date` - When the post was submitted
+`label` - 
+`pred_label` - Whether the post contains misinformation. `1` = true, `0` = fake
+`pred_prob` - Probability that this post contains misinformation. A float between 0-1
+`correct` - Whether this record should be included in the import. True/Falset .
+
+**Request Body**
+
+You will need to upload a file with the name `posts`.
+
+**Example Usage**
+
+```sh
+curl localhost:5000/api/posts -X PUT \
+-F "posts=@/.../path/to/predictions_detailed.csv"
+```
+
+**Response - HTTP 204**
+
+If all posts were inserted into the database, it will return HTTP 204 no content.
+
+**Response - HTTP 400**
+
+If you did not upload a file, then it will return HTTP 400
+
 ### Put Random Posts
 
 `PUT /api/posts/random`

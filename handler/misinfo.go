@@ -53,7 +53,6 @@ func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
 
 	post.AttachReportToPost(misinfoPayload.Misinformation, misinfoPayload.Confidence, dateSubmittedFormatted)
 
-	log.Printf("updating or inserting misinfo report")
 	if err = c.dbs.InsertOrUpdateMisinfoReport(post); err != nil {
 		log.Printf("error updating post from misinfo payload: %v", err)
 		return
