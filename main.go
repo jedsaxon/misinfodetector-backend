@@ -67,6 +67,7 @@ func main() {
 	r.HandleFunc("/api/posts", c.GetPosts).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts", c.PutPosts).Methods(http.MethodPut)
 	r.HandleFunc("/api/posts", c.UploadPost).Methods(http.MethodPost)
+	r.HandleFunc("/api/posts/all", c.GetAllPosts).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts/{id}", c.GetSpecificPost).Methods(http.MethodGet)
 	r.HandleFunc("/api/posts/random", c.PutRandomPosts).Methods(http.MethodPost)
 

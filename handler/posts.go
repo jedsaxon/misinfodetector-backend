@@ -218,3 +218,14 @@ func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request)
 		Amount:  body.Amount,
 	})
 }
+
+func (c *PostsController) GetAllPosts(w http.ResponseWriter, r *http.Request) {
+	posts, err := c.dbs.GetAllPosts()
+	if err != nil {
+		NewCustomResponse(http.StatusBadRequest, "malformed body").RespondTo(w)
+		log.Printf("unable to unmarshal body: %v", err)
+		return
+	}
+
+	WriteJsonFatal(http.StatusOK, w, posts)
+}

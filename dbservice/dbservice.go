@@ -276,6 +276,59 @@ func misinfoLabel(lbl string) (models.MisinfoState, error) {
 	return -1, fmt.Errorf("unknown/unsupported misinformation label: %s", lbl)
 }
 
+func (service *DbService) GetAllPosts() ([]*models.PostModelId, error) {
+	service.dbmut.Lock()
+	defer service.dbmut.Unlock()
+
+	rows, err := service.db.Query("select id, message, username, date_submitted from posts")
+	if err != nil {
+		return nil, fmt.Errorf("error performing query: %v", err)
+	}
+	defer rows.Close()
+
+	response := make([]*models.PostModelId, 0)
+	for rows.Next() {
+		var submittedDate string
+		var currentPost models.PostModelId
+		var containsMisinfo int
+		var misinfoState models.MisinfoState
+		var misinfoConfidence float32
+		var misinfoDateSubmittedRaw string
+		var idBytes []byte
+
+		err = rows.Scan(&idBytes, &currentPost.Message, &currentPost.Username, &submittedDate, &containsMisinfo, &misinfoState, &misinfoConfidence, &misinfoDateSubmittedRaw)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("error querying database for post: %v", err)
+		}
+
+		postSubmitTime, err := time.Parse(time.RFC3339, submittedDate)
+		if err != nil {
+			return nil, err
+		}
+		currentPost.SubmittedDateUTC = postSubmitTime.UTC()
+
+		idUuid, err := uuid.ParseBytes(idBytes)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create uuid: %v", err)
+		}
+		currentPost.Id = idUuid
+
+		if containsMisinfo == 1 {
+			misinfoReportTime, err := time.Parse(time.RFC3339, misinfoDateSubmittedRaw)
+			if err != nil {
+				return nil, err
+			}
+			currentPost.AttachReportToPost(misinfoState, misinfoConfidence, misinfoReportTime.UTC())
+		}
+		response = append(response, &currentPost)
+	}
+
+	return response, nil
+}
+
 func (service *DbService) InsertPost(p *models.PostModel) (*models.PostModelId, error) {
 	service.dbmut.Lock()
 	defer service.dbmut.Unlock()
