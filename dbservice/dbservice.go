@@ -73,7 +73,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]*m
 		from
 			posts
 		LEFT JOIN misinfo_report on posts.id = misinfo_report.post_id
-		ORDER BY DATE(post_date_submitted)
+	ORDER BY STRFTIME("%Y-%m-%dT%H:%M:%f", post_date_submitted)
 		limit ? offset ?
 	`)
 	if err != nil {
