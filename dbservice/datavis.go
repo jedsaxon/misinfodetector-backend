@@ -64,7 +64,7 @@ func (service *DbService) importTnseEmbeddingRecord(record []string, idx int) {
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(parsedRecord.RecordId, parsedRecord.Label, parsedRecord.PredictionLabel, parsedRecord.Correct, parsedRecord.TnseY, parsedRecord.TnseY); err != nil {
+	if _, err := stmt.Exec(parsedRecord.RecordId, parsedRecord.Label, parsedRecord.PredictionLabel, parsedRecord.Correct, parsedRecord.TnseX, parsedRecord.TnseY); err != nil {
 		log.Printf("error executing sql statement on line %b: %v", idx, err)
 		return
 	}
