@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"misinfodetector-backend/models"
+	"time"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -43,8 +44,16 @@ func (c *PostsController) HandleNewMisinfoReport(msg *amqp.Delivery) {
 		return
 	}
 
-	post.AttachReportToPost(post.MisinfoReport.State, post.MisinfoReport.Confidence, post.SubmittedDateUTC)
+	dateSubmittedFormatted, err := time.Parse(time.RFC3339, misinfoPayload.DateSubmittedUTC)
+	if err != nil {
+		log.Printf("misinformation payload recieved unexpected time format. Expected format '%s', got time '%s'", time.RFC3339, misinfoPayload.DateSubmittedUTC)
+		msg.Ack(false)
+		return
+	}
 
+	post.AttachReportToPost(misinfoPayload.Misinformation, misinfoPayload.Confidence, dateSubmittedFormatted)
+
+	log.Printf("updating or inserting misinfo report")
 	if err = c.dbs.InsertOrUpdateMisinfoReport(post); err != nil {
 		log.Printf("error updating post from misinfo payload: %v", err)
 		return
