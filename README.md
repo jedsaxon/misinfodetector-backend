@@ -111,10 +111,10 @@ Retrieves a paginated list of posts from the database. Returns the posts along w
 **Query Parameters**
 
 - `pageNumber` (integer, required): The page number to retrieve.
-  - Must be greater than 0
+    - Must be greater than 0
 - `resultAmount` (integer, required): The amount of results to return.
-  - Must be greater than 0
-  - Must be less than 51
+    - Must be greater than 0
+    - Must be less than 51
 
 **Example Usage**
 
@@ -140,11 +140,11 @@ containing the total amount of pages the user can navigate through.
       "username": "john_doe",
       "submitted_date": "2025-11-05T10:30:00Z",
       "misinfo_state": {
-          "state": 0,
-          "confidence": 0.5,
-          "submitted_date": "2006-01-02T15:04:05Z"
-        }
+        "state": 0,
+        "confidence": 0.5,
+        "submitted_date": "2006-01-02T15:04:05Z"
       }
+    }
     }
   ],
   "pages": 5
@@ -182,11 +182,11 @@ be set to 2, until the misinformation detector service can handle it.
 ```
 
 - `username` (string, required): username of the poster.
-  - length must be above 0
-  - length must be bellow 64
+    - length must be above 0
+    - length must be bellow 64
 - `message` (string, required): content of the post
-  - length must be above 0
-  - length must be bellow 256
+    - length must be above 0
+    - length must be bellow 256
 
 **Example Usage**
 
@@ -212,12 +212,12 @@ URL of the created post.
     "username": "john_doe",
     "submitted_date": "2025-11-05T10:30:00Z",
     "misinfo_state": {
-        "state": 0,
-        "confidence": 0.5,
-        "submitted_date": "2006-01-02T15:04:05Z"
-      }
+      "state": 0,
+      "confidence": 0.5,
+      "submitted_date": "2006-01-02T15:04:05Z"
     }
   }
+}
 }
 ```
 
@@ -231,7 +231,7 @@ column names, but must be in correct order):
 `id` - Id of the post (not used, but required)
 `text` - The post's actual content
 `date` - When the post was submitted
-`label` - 
+`label` -
 `pred_label` - Whether the post contains misinformation. `1` = true, `0` = fake
 `pred_prob` - Probability that this post contains misinformation. A float between 0-1
 `correct` - Whether this record should be included in the import. True/Falset .
@@ -270,8 +270,8 @@ Creates a specified number of randomly generated posts for testing purposes.
 ```
 
 - `amount` (integer, required): number of posts to insert
-  - Must be more than 0
-  - Cannot be greater than 20,000
+    - Must be more than 0
+    - Cannot be greater than 20,000
 
 **Example Usage**
 
@@ -280,6 +280,73 @@ curl -X POST "http://localhost:5000/api/posts/random" \
 -H "Content-Type: application/json" \
 -d '{ "amount": 10 }'
 ```
+
+### Get TNSE Embeddings
+
+`GET /api/data/tnse-embeddings`
+
+Retrieves all t-SNE (t-Distributed Stochastic Neighbor Embedding) visualization data from the database. This endpoint
+returns embedding coordinates and prediction information for visualizing the misinformation detection model's results.
+
+**Query Parameters**
+
+None Required.
+
+**Example Usage**
+
+```sh
+sh curl -X GET "http://localhost:5000/api/data/tnse-embeddings"
+-H "Content-Type: application/json"
+```
+
+**Response - HTTP 200**
+
+Returns an array of t-SNE embedding records. Each record contains the original label, predicted label, correctness,
+and 2D coordinates for visualization.
+
+```json
+[
+  {
+    "id": 0,
+    "label": 1,
+    "pred_label": 0,
+    "correct": "True",
+    "tnse_x": 0.00000,
+    "tnse_y": 0.00000
+  }
+]
+```
+
+### Import T-SNE Embeddings
+
+Imports t-SNE embedding data from a CSV file into the database. This endpoint will delete all existing embeddings before
+importing the new data. The CSV file should contain the following columns in order:
+
+- `id` - Record ID
+- `label` - Actual label (0 = fake, 1 = true)
+- `pred_label` - Predicted label (0 = fake, 1 = true)
+- `correct` - Whether the prediction was correct ("True"/"False")
+- `tnse_x` - X coordinate in t-SNE space
+- `tnse_y` - Y coordinate in t-SNE space
+
+**Request Body**
+
+You will need to upload a file with the form field name `embeddings`.
+
+**Example Usage**
+
+```sh
+sh curl -X PUT "http://localhost:5000/api/data/tnse-embeddings"
+-F "embeddings=@/path/to/tnse_embeddings.csv"
+```
+
+**Response - HTTP 204**
+
+If all embeddings were successfully imported into the database, it will return HTTP 204 no content.
+
+**Response - HTTP 400**
+
+If the file was not provided or the form field name is incorrect, the server will respond with 400.
 
 ## Common Error Responses
 
