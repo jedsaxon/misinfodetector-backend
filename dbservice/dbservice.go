@@ -73,7 +73,7 @@ func (dbservice *DbService) GetPosts(pageNumber int64, resultAmount int64) ([]*m
 		from
 			posts
 		LEFT JOIN misinfo_report on posts.id = misinfo_report.post_id
-	ORDER BY STRFTIME("%Y-%m-%dT%H:%M:%f", post_date_submitted)
+		ORDER BY STRFTIME(post_date_submitted) DESC
 		limit ? offset ?
 	`)
 	if err != nil {
@@ -254,7 +254,7 @@ func (service *DbService) importPostRecord(record []string, idx int, submitDateU
 		return
 	}
 
-	dateFormatted, err := time.Parse("2006-01-06", rawDate)
+	dateFormatted, err := time.Parse("2006-01-02", rawDate)
 	if err != nil {
 		log.Printf("import -> skipping record on line %b: bad date: %v", idx, err)
 		return
