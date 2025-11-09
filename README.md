@@ -295,7 +295,7 @@ None Required.
 **Example Usage**
 
 ```sh
-sh curl -X GET "http://localhost:5000/api/data/tnse-embeddings"
+sh curl -X GET "http://localhost:5000/api/data/tnse-embeddings" \
 -H "Content-Type: application/json"
 ```
 
@@ -336,7 +336,7 @@ You will need to upload a file with the form field name `embeddings`.
 **Example Usage**
 
 ```sh
-sh curl -X PUT "http://localhost:5000/api/data/tnse-embeddings"
+sh curl -X PUT "http://localhost:5000/api/data/tnse-embeddings" \
 -F "embeddings=@/path/to/tnse_embeddings.csv"
 ```
 
@@ -359,7 +359,7 @@ None Required.
 **Example Usage**
 
 ```sh
-sh curl -X GET "http://localhost:5000/api/data/topic-activities"
+sh curl -X GET "http://localhost:5000/api/data/topic-activities" \
 -H "Content-Type: application/json"
 ```
 
@@ -396,8 +396,8 @@ You will need to upload a file with the form field name ``.
 **Example Usage**
 
 ```sh
-sh curl -X PUT "http://localhost:5000/api/data/topic-activities"
--F "activities=@/path/to/topic_activities.csv"
+sh curl -X PUT "http://localhost:5000/api/data/topic-activities" \ 
+-F "topics=@/path/to/topic_activities.csv"
 ```
 
 **Response - HTTP 204**
