@@ -430,12 +430,20 @@ func (service *DbService) UpdatePost(old *models.PostModelId, updated *models.Po
 }
 
 func initDb(db *sql.DB) error {
+	// POSTS TABLE
 	_, err := db.Exec("create table if not exists posts(id varchar(36), message text, username text, date_submitted text);")
 	if err != nil {
 		return err
 	}
 
+	// MISINFO REPORT
 	_, err = db.Exec("create table if not exists misinfo_report(post_id varchar(36) references posts(id), state int, confidence float, date_submitted text)")
+	if err != nil {
+		return err
+	}
+
+	// TNSE EMBEDDING DOCUMENTS
+	_, err = db.Exec("create table if not exists tnse_embed_records(record_id int primary key, label int, pred_label int, correct varchar(5), tnse_x double precision, tnse_y double precision)")
 	if err != nil {
 		return err
 	}
