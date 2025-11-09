@@ -54,9 +54,10 @@ func (service *DbService) importTnseEmbeddingRecord(record []string, idx int) {
 	parsedRecord, err := parseTnseRecord(record)
 	if err != nil {
 		log.Printf("unable to parse record on line %b: %v", idx, err)
+		return
 	}
 
-	stmt, err := service.db.Prepare("insert into tnse_embed_records(record_id, label, pred_label, correct, tnse_x, tnse_y) values (?, ?, ?, ?, ?, ?)")
+	stmt, err := service.db.Prepare("insert into tnse_embeddings(record_id, label, pred_label, correct, tnse_x, tnse_y) values (?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("error preparing sql statement on line %b: %v", idx, err)
 		return
@@ -73,7 +74,7 @@ func (service *DbService) GetAllTnseEmbeddings() ([]*models.TnseEmbeddingRecord,
 	service.dbmut.Lock()
 	defer service.dbmut.Unlock()
 
-	rows, err := service.db.Query("select record_id, label, pred_label, correct, tnse_x, tnse_y from tnse_embed_records")
+	rows, err := service.db.Query("select record_id, label, pred_label, correct, tnse_x, tnse_y from tnse_embeddings")
 	if err != nil {
 		return nil, fmt.Errorf("error querying tnse embeddings: %v", err)
 	}

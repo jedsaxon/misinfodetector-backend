@@ -443,7 +443,7 @@ func initDb(db *sql.DB) error {
 	}
 
 	// TNSE EMBEDDING DOCUMENTS
-	_, err = db.Exec("create table if not exists tnse_embed_records(record_id int primary key, label int, pred_label int, correct varchar(5), tnse_x double precision, tnse_y double precision)")
+	_, err = db.Exec("create table if not exists tnse_embeddings(record_id int primary key, label int, pred_label int, correct varchar(5), tnse_x double precision, tnse_y double precision)")
 	if err != nil {
 		return err
 	}
