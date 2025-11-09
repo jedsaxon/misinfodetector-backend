@@ -447,5 +447,11 @@ func initDb(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+
+	// TOPIC ACTIVITIES
+	_, err = db.Exec("create table if not exists topic_activities(record_id integer primary key autoincrement, date text, contents text, topic_id int, topic_name text)")
+	if err != nil {
+		return err
+	}
 	return nil
 }

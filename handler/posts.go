@@ -218,7 +218,3 @@ func (c *PostsController) PutRandomPosts(w http.ResponseWriter, r *http.Request)
 		Amount:  body.Amount,
 	})
 }
-
-func DeletePosts(w http.ResponseWriter, r *http.Request, db *dbservice.DbService) {
-
-}

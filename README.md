@@ -348,6 +348,66 @@ If all embeddings were successfully imported into the database, it will return H
 
 If the file was not provided or the form field name is incorrect, the server will respond with 400.
 
+### Get Topic Activities
+
+`GET /api/data/topic activities`
+
+**Query Parameters**
+
+None Required.
+
+**Example Usage**
+
+```sh
+sh curl -X GET "http://localhost:5000/api/data/topic-activities"
+-H "Content-Type: application/json"
+```
+
+**Response - HTTP 200**
+
+Returns an array of t-SNE embedding records. Each record contains the original label, predicted label, correctness,
+and 2D coordinates for visualization.
+
+```json
+[
+  {
+    "db_id": 0,
+    "date": "20216-10-27T00:00:00Z",
+    "text": 0,
+    "topic_id": 0,
+    "topic_name": "abcde"
+  }
+]
+```
+
+### Import Topic Activities
+
+CSV formatted document for topic activities.
+
+- `date` should be in format YYYY/MM/DD
+- `text` Text containing activity
+- `topic_id` The id of the topic
+- `topic_name` Name of the topic
+
+**Request Body**
+
+You will need to upload a file with the form field name ``.
+
+**Example Usage**
+
+```sh
+sh curl -X PUT "http://localhost:5000/api/data/topic-activities"
+-F "activities=@/path/to/topic_activities.csv"
+```
+
+**Response - HTTP 204**
+
+If all topics were successfully imported into the database, it will return HTTP 204 no content.
+
+**Response - HTTP 400**
+
+If the file was not provided or the form field name is incorrect, the server will respond with 400.
+
 ## Common Error Responses
 
 ### 400 Bad Request

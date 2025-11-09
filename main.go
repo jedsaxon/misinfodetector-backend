@@ -72,6 +72,8 @@ func main() {
 
 	r.HandleFunc("/api/data/tnse-embeddings", c.GetTnseEmbeddings).Methods(http.MethodGet)
 	r.HandleFunc("/api/data/tnse-embeddings", c.PutTnseEmbeddings).Methods(http.MethodPut)
+	r.HandleFunc("/api/data/topic-activities", c.GetTopicActivities).Methods(http.MethodGet)
+	r.HandleFunc("/api/data/topic-activities", c.PutTopicActivities).Methods(http.MethodPut)
 
 	handler := cors.AllowAll().Handler(r)
 

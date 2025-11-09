@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type TnseEmbeddingRecord struct {
 	RecordId        int64   `json:"id"`
 	Label           int64   `json:"label"`
@@ -7,4 +9,12 @@ type TnseEmbeddingRecord struct {
 	Correct         string  `json:"correct"`
 	TnseX           float64 `json:"tnse_x"`
 	TnseY           float64 `json:"tnse_y"`
+}
+
+type TopicActivityRecord struct {
+	RecordId  int64     `json:"db_id"`
+	DateUtc   time.Time `json:"date"`
+	Text      string    `json:"text"`
+	TopicId   int64     `json:"topic_id"`
+	TopicName string    `json:"topic_name"`
 }
